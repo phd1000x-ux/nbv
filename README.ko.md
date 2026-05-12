@@ -56,6 +56,14 @@ cargo install --path .
 
 macOS arm64에서 테스트됨. Linux도 빌드는 되지만 v0.1에서는 우선순위 아님. Homebrew tap은 v0.2에서 계획.
 
+`cargo install` 후 `~/.cargo/bin`이 `PATH`에 없다는 경고가 뜨면:
+
+```bash
+nbv setup
+```
+
+셸(zsh / bash / fish)을 감지해서 rc 파일에 추가할 한 줄을 보여주고 y/N로 확인받는다. 자동 적용은 `--yes`.
+
 ## 사용법
 
 ```bash

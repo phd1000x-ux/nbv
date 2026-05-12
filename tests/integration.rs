@@ -58,6 +58,43 @@ fn missing_arg_exits_with_code_2() {
 }
 
 #[test]
+fn setup_help_lists_subcommand() {
+    let (out, _err, code) = run(&["--help"]);
+    assert_eq!(code, 0);
+    assert!(out.contains("setup"), "top-level help should mention setup: {}", out);
+}
+
+#[test]
+fn setup_subcommand_help_works() {
+    let (out, _err, code) = run(&["setup", "--help"]);
+    assert_eq!(code, 0);
+    assert!(out.contains("--yes") || out.contains("-y"), "setup --help should mention --yes: {}", out);
+}
+
+#[test]
+fn setup_idempotent_when_bin_dir_already_in_path() {
+    let bin_dir = std::path::Path::new(BIN)
+        .parent()
+        .expect("BIN has a parent")
+        .to_string_lossy()
+        .into_owned();
+    let extra = format!("{}:{}", bin_dir, std::env::var("PATH").unwrap_or_default());
+    let out = Command::new(BIN)
+        .arg("setup")
+        .env("PATH", extra)
+        .output()
+        .expect("run nbv setup");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let code = out.status.code().unwrap_or(-1);
+    assert_eq!(code, 0);
+    assert!(
+        stdout.contains("already in PATH"),
+        "expected idempotent message, got: {}",
+        stdout
+    );
+}
+
+#[test]
 fn large_notebook_renders_in_reasonable_time() {
     let start = std::time::Instant::now();
     let (out, _err, code) = run(&["--no-color", "--no-images", "tests/fixtures/large.ipynb"]);

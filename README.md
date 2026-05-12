@@ -56,6 +56,14 @@ cargo install --path .
 
 Tested on macOS arm64; Linux likely works but unverified for v0.1. Homebrew tap is planned for v0.2.
 
+If `cargo install` warns that `~/.cargo/bin` is not on your `PATH`, run:
+
+```bash
+nbv setup
+```
+
+This detects your shell (zsh, bash, fish), shows the line it would append to your rc file, and asks for confirmation. Pass `--yes` to skip the prompt.
+
 ## Usage
 
 ```bash

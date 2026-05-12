@@ -1,24 +1,37 @@
-use std::io::{self, Write, BufWriter};
+use std::io::{self, BufWriter, Write};
 use std::process::ExitCode;
 
 use clap::Parser;
 
-use nbv::cli::Args;
+use nbv::cli::{Args, Command};
 use nbv::env;
 use nbv::ipynb::parse;
 use nbv::render;
+use nbv::setup;
 
 fn main() -> ExitCode {
     install_sigpipe_handler();
     let args = Args::parse();
 
-    let nb = match parse::from_path(&args.file) {
+    if let Some(Command::Setup { yes }) = args.command {
+        return ExitCode::from(setup::run(yes) as u8);
+    }
+
+    let file = match args.file {
+        Some(f) => f,
+        None => {
+            eprintln!("nbv: missing file argument");
+            return ExitCode::from(2);
+        }
+    };
+
+    let nb = match parse::from_path(&file) {
         Err(e) => {
-            eprintln!("nbv: {}: {}", args.file.display(), e);
+            eprintln!("nbv: {}: {}", file.display(), e);
             return ExitCode::from(1);
         }
         Ok(Err(e)) => {
-            eprintln!("nbv: failed to parse '{}': {}", args.file.display(), e);
+            eprintln!("nbv: failed to parse '{}': {}", file.display(), e);
             return ExitCode::from(3);
         }
         Ok(Ok(nb)) => nb,
