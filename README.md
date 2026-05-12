@@ -35,18 +35,26 @@ In Ghostty or iTerm2, matplotlib/seaborn PNG outputs render inline.
 
 ## Install
 
+**Homebrew (macOS arm64):**
+
+```bash
+brew install phd1000x-ux/tap/nbv
+```
+
+**Cargo (any platform with Rust 1.70+):**
+
 ```bash
 cargo install nbv
 ```
 
-Requires Rust 1.70 or newer. Or grab the prebuilt macOS arm64 binary from the [latest release](https://github.com/phd1000x-ux/nbv/releases/latest):
+**Prebuilt binary (macOS arm64):**
 
 ```bash
 curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.2-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
-Or build from source:
+**From source:**
 
 ```bash
 git clone https://github.com/phd1000x-ux/nbv.git
@@ -54,7 +62,7 @@ cd nbv
 cargo install --path .
 ```
 
-Tested on macOS arm64; Linux likely works but unverified for v0.1. Homebrew tap is planned for v0.2.
+Tested on macOS arm64; Linux likely works but unverified for v0.1.
 
 If `cargo install` warns that `~/.cargo/bin` is not on your `PATH`, run:
 
