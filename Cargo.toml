@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "A fast terminal-native Jupyter notebook viewer"
 license = "MIT"
+repository = "https://github.com/phd1000x-ux/nbv"
+readme = "README.md"
 
 [[bin]]
 name = "nbv"

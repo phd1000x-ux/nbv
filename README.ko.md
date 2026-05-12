@@ -38,7 +38,7 @@ Ghostty나 iTerm2에서는 matplotlib/seaborn으로 만든 PNG 출력이 셀 안
 ### 소스에서 빌드
 
 ```bash
-git clone <repo-url> nbv
+git clone https://github.com/phd1000x-ux/nbv.git
 cd nbv
 cargo install --path .
 ```

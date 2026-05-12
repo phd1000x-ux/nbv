@@ -38,7 +38,7 @@ In Ghostty or iTerm2, matplotlib/seaborn PNG outputs render inline.
 ### From source
 
 ```bash
-git clone <repo-url> nbv
+git clone https://github.com/phd1000x-ux/nbv.git
 cd nbv
 cargo install --path .
 ```
