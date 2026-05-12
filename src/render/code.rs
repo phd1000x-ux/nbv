@@ -50,14 +50,18 @@ mod tests {
         RenderCtx { is_tty: true, use_color, width: 60, image_backend: ImageBackend::Placeholder }
     }
 
+    fn ctx_wide(use_color: bool) -> RenderCtx {
+        RenderCtx { is_tty: true, use_color, width: 200, image_backend: ImageBackend::Placeholder }
+    }
+
     #[test]
     fn renders_python_code_with_color() {
         let mut buf = Vec::new();
-        render("x = 1", "python", &ctx(true), &mut buf).unwrap();
+        render("x = 1", "python", &ctx_wide(true), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        // syntect emits ANSI between tokens; wrap_line may truncate if ANSI bytes
-        // consume visual-width budget; we verify at minimum some content appears
         assert!(s.contains("x"));
+        assert!(s.contains("="));
+        assert!(s.contains("1"));
         assert!(s.contains("\x1b["));  // ANSI from syntect
     }
 
