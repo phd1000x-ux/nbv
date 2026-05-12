@@ -18,7 +18,6 @@ pub struct NotebookMetadata {
 pub struct KernelSpec {
     pub name: String,
     pub language: Option<String>,
-    #[serde(default)]
     pub display_name: Option<String>,
 }
 
@@ -167,8 +166,8 @@ mod tests {
             {"cell_type":"raw","source":"raw text","metadata":{}}
         ],"metadata":{},"nbformat":4,"nbformat_minor":5}"##;
         let nb: Notebook = serde_json::from_str(json).unwrap();
-        matches!(nb.cells[0], Cell::Markdown { .. });
-        matches!(nb.cells[1], Cell::Raw { .. });
+        assert!(matches!(nb.cells[0], Cell::Markdown { .. }));
+        assert!(matches!(nb.cells[1], Cell::Raw { .. }));
     }
 
     #[test]
@@ -177,7 +176,7 @@ mod tests {
             {"cell_type":"futuristic","source":"weird","metadata":{}}
         ],"metadata":{},"nbformat":4,"nbformat_minor":5}"#;
         let nb: Notebook = serde_json::from_str(json).unwrap();
-        matches!(nb.cells[0], Cell::Unknown);
+        assert!(matches!(nb.cells[0], Cell::Unknown));
     }
 
     #[test]
@@ -213,6 +212,23 @@ mod tests {
                     assert_eq!(*execution_count, Some(2));
                 }
                 _ => panic!(),
+            },
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parses_display_data_output() {
+        let json = r#"{"cells":[{"cell_type":"code","source":"","metadata":{},"outputs":[
+            {"output_type":"display_data","data":{"text/plain":"<Figure>"},"metadata":{}}
+        ]}],"metadata":{},"nbformat":4,"nbformat_minor":5}"#;
+        let nb: Notebook = serde_json::from_str(json).unwrap();
+        match &nb.cells[0] {
+            Cell::Code { outputs, .. } => match &outputs[0] {
+                Output::DisplayData { data } => {
+                    assert_eq!(data.text_plain.as_deref(), Some("<Figure>"));
+                }
+                _ => panic!("expected DisplayData"),
             },
             _ => panic!(),
         }
