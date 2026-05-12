@@ -42,7 +42,7 @@ cargo install nbv
 Requires Rust 1.70 or newer. Or grab the prebuilt macOS arm64 binary from the [latest release](https://github.com/phd1000x-ux/nbv/releases/latest):
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.0-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.1-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
