@@ -12,7 +12,6 @@ pub const FG_RED: &str = "\x1b[31m";
 pub const FG_BLUE: &str = "\x1b[34m";
 pub const FG_YELLOW: &str = "\x1b[33m";
 pub const FG_MAGENTA: &str = "\x1b[35m";
-pub const FG_GREY: &str = "\x1b[90m";
 
 pub fn colorize_code_header(s: &str, color: bool) -> String {
     if color { format!("{}{}{}{}", BOLD, FG_CYAN, s, RESET) } else { s.to_string() }
@@ -32,10 +31,6 @@ pub fn colorize_markdown_header(s: &str, color: bool) -> String {
 
 pub fn dim(s: &str, color: bool) -> String {
     if color { format!("{}{}{}", DIM, s, RESET) } else { s.to_string() }
-}
-
-pub fn frame_border(color: bool) -> &'static str {
-    if color { FG_GREY } else { "" }
 }
 
 #[cfg(test)]
