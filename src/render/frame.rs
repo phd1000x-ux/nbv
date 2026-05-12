@@ -1,13 +1,34 @@
 use std::io::{self, Write};
-use unicode_width::UnicodeWidthStr;
 
 use crate::env::RenderCtx;
 use crate::theme;
 
+/// Visible display width, skipping ANSI CSI escape sequences (`\x1b[...<final>`).
+fn ansi_width(s: &str) -> usize {
+    let mut w = 0usize;
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '\x1b' {
+            // Skip the escape: peek for '[' then consume until 0x40..=0x7E final byte.
+            if let Some('[') = chars.clone().next() {
+                chars.next();
+                for nc in chars.by_ref() {
+                    if ('@'..='~').contains(&nc) { break; }
+                }
+            }
+            // Non-CSI escapes (OSC, etc.): the \x1b is consumed; next iteration continues.
+            // For v0.1 we don't expect those in labels.
+        } else {
+            w += unicode_width::UnicodeWidthChar::width(c).unwrap_or(0);
+        }
+    }
+    w
+}
+
 /// 상단 박스 라인: `┌─ {label} ─...─┐`
 pub fn open(label: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     let label_str = format!(" {} ", label);
-    let label_w = label_str.width();
+    let label_w = ansi_width(&label_str);
     let inner_w = ctx.width.saturating_sub(2); // ┌, ┐ 제외
     let dashes = inner_w.saturating_sub(label_w + 1);
     let border = theme::frame_border(ctx.use_color);
@@ -113,5 +134,19 @@ mod tests {
         // unicode-width 기준 가시 폭이 20이어야 함 (chars().count()와 다름)
         use unicode_width::UnicodeWidthStr;
         assert_eq!(line.width(), 20);
+    }
+
+    #[test]
+    fn open_with_colored_label_still_fills_full_width() {
+        use crate::theme;
+        let mut buf = Vec::new();
+        let ctx = RenderCtx { is_tty: true, use_color: true, width: 30, image_backend: ImageBackend::Placeholder };
+        let label = theme::colorize_code_header("In [1] code (python)", true);
+        open(&label, &ctx, &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        let line = s.trim_end_matches('\n');
+        // The visible width must equal ctx.width (30), even though the byte length is much larger.
+        let visible = ansi_width(line);
+        assert_eq!(visible, 30, "visible width should equal ctx.width, got {visible}");
     }
 }

@@ -43,6 +43,7 @@ fn install_sigpipe_handler() {
     use signal_hook::iterator::Signals;
     let mut signals = Signals::new([SIGPIPE]).expect("install SIGPIPE handler");
     std::thread::spawn(move || {
-        for _ in signals.forever() { std::process::exit(0); }
+        let _ = signals.forever().next();
+        std::process::exit(0);
     });
 }

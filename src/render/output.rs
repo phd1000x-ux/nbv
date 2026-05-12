@@ -42,8 +42,10 @@ fn render_bundle(bundle: &MimeBundle, exec_count: Option<u64>, cell_idx: usize, 
     // 우선순위: image/png (백엔드 가능 시) → image/png (placeholder) → text/plain → 기타 placeholder
     if let Some(b64) = &bundle.image_png {
         let mime = "image/png";
-        let exec_label = exec_count.map(|n| format!("[{}]", n)).unwrap_or_default();
-        let label = format!("Out {} ── {}", exec_label, mime);
+        let label = match exec_count {
+            Some(n) => format!("Out [{}] ── {}", n, mime),
+            None => format!("Out ── {}", mime),
+        };
         let label = theme::colorize_output_header(&label, ctx.use_color);
         frame::open(&label, ctx, w)?;
         match base64::engine::general_purpose::STANDARD.decode(b64) {
@@ -54,8 +56,10 @@ fn render_bundle(bundle: &MimeBundle, exec_count: Option<u64>, cell_idx: usize, 
         return Ok(());
     }
     if let Some(t) = &bundle.text_plain {
-        let exec_label = exec_count.map(|n| format!("[{}]", n)).unwrap_or_default();
-        let label = format!("Out {} ── text/plain", exec_label);
+        let label = match exec_count {
+            Some(n) => format!("Out [{}] ── text/plain", n),
+            None => "Out ── text/plain".to_string(),
+        };
         let label = theme::colorize_output_header(&label, ctx.use_color);
         frame::open(&label, ctx, w)?;
         text::render(t, ctx, w)?;
