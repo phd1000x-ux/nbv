@@ -30,7 +30,7 @@ pub fn close(ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
 }
 
 /// 박스 내부 한 줄: `│ {content padded} │`
-pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) -> io::Result<()> {
     let inner_w = ctx.width.saturating_sub(4); // `│ ` + content + ` │`
     let mut trimmed = String::new();
     let mut used = 0usize;
