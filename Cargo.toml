@@ -1,0 +1,35 @@
+[package]
+name = "nbv"
+version = "0.1.0"
+edition = "2021"
+description = "A fast terminal-native Jupyter notebook viewer"
+license = "MIT"
+
+[[bin]]
+name = "nbv"
+path = "src/main.rs"
+
+[lib]
+name = "nbv"
+path = "src/lib.rs"
+
+[dependencies]
+clap = { version = "=4.5.20", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+syntect = { version = "5.3", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html", "yaml-load", "dump-load", "dump-create", "regex-fancy"] }
+pulldown-cmark = { version = "0.10", default-features = false }
+crossterm = "0.27"
+base64 = "0.22"
+unicode-width = "0.1"
+anyhow = "1"
+thiserror = "1"
+signal-hook = "0.3"
+
+[dev-dependencies]
+insta = "1"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
