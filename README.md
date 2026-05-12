@@ -1,5 +1,7 @@
 # nbv
 
+[한국어](README.ko.md)
+
 A fast terminal-native Jupyter notebook viewer.
 
 Browse `.ipynb` files in your terminal without firing up a browser, JupyterLab, or VS Code. Designed for the `cat`/`bat`-style workflow — one command, full output streamed to stdout, no UI to navigate.
