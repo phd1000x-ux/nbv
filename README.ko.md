@@ -42,7 +42,7 @@ cargo install nbv
 Rust 1.70 이상 필요. 또는 [최신 릴리스](https://github.com/phd1000x-ux/nbv/releases/latest)에서 prebuilt macOS arm64 바이너리:
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.1-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.2-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
