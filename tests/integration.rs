@@ -52,9 +52,12 @@ fn invalid_json_exits_with_code_3() {
 }
 
 #[test]
-fn missing_arg_exits_with_code_2() {
-    let (_out, _err, code) = run(&[]);
+fn missing_arg_exits_with_code_2_and_prints_usage() {
+    let (_out, err, code) = run(&[]);
     assert_eq!(code, 2);
+    assert!(err.contains("Usage:"), "stderr should include usage: {}", err);
+    assert!(err.contains("setup"), "stderr should mention setup subcommand: {}", err);
+    assert!(err.contains("--help"), "stderr should hint at --help: {}", err);
 }
 
 #[test]

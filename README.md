@@ -59,10 +59,10 @@ Tested on macOS arm64; Linux likely works but unverified for v0.1. Homebrew tap 
 If `cargo install` warns that `~/.cargo/bin` is not on your `PATH`, run:
 
 ```bash
-nbv setup
+~/.cargo/bin/nbv setup
 ```
 
-This detects your shell (zsh, bash, fish), shows the line it would append to your rc file, and asks for confirmation. Pass `--yes` to skip the prompt.
+(Use the full path because `nbv` is not on `PATH` yet — that's the whole problem we're fixing.) `setup` detects your shell (zsh, bash, fish), shows the exact line it would append to your rc file, and asks for confirmation. After confirming, it prints a one-liner you can paste to activate the new `PATH` in the current terminal — different per shell (`export PATH=…` for zsh/bash, `fish_add_path …` for fish). Or just open a new terminal. Pass `--yes` to skip the confirmation prompt.
 
 ## Usage
 

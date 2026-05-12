@@ -157,7 +157,12 @@ pub fn run(yes: bool) -> i32 {
     }
 
     println!();
-    println!("Done. Open a new terminal or run:");
+    println!("Saved to {}. New terminals will pick this up automatically.", rc.display());
+    println!();
+    println!("To activate it in THIS terminal right now, run:");
+    println!("    {}", line);
+    println!();
+    println!("Or reload the config file:");
     println!("    source {}", rc.display());
     0
 }

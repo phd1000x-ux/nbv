@@ -20,7 +20,13 @@ fn main() -> ExitCode {
     let file = match args.file {
         Some(f) => f,
         None => {
-            eprintln!("nbv: missing file argument");
+            eprintln!("nbv: no notebook given");
+            eprintln!();
+            eprintln!("Usage:");
+            eprintln!("    nbv [OPTIONS] <FILE>      Render a Jupyter notebook to stdout");
+            eprintln!("    nbv setup [--yes]         Add the nbv binary directory to your shell PATH");
+            eprintln!();
+            eprintln!("Run `nbv --help` for more details.");
             return ExitCode::from(2);
         }
     };
