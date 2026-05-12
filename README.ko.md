@@ -35,7 +35,18 @@ Ghostty나 iTerm2에서는 matplotlib/seaborn으로 만든 PNG 출력이 셀 안
 
 ## 설치
 
-### 소스에서 빌드
+```bash
+cargo install nbv
+```
+
+Rust 1.70 이상 필요. 또는 [최신 릴리스](https://github.com/phd1000x-ux/nbv/releases/latest)에서 prebuilt macOS arm64 바이너리:
+
+```bash
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.0-aarch64-apple-darwin.tar.gz \
+  | tar -xz -C /usr/local/bin
+```
+
+또는 소스에서 빌드:
 
 ```bash
 git clone https://github.com/phd1000x-ux/nbv.git
@@ -43,9 +54,7 @@ cd nbv
 cargo install --path .
 ```
 
-Rust 1.70 이상 필요. macOS arm64에서 테스트됨. Linux도 빌드는 되지만 v0.1에서는 우선순위 아님.
-
-향후 (v0.1 이후): `cargo install nbv`, `brew install gsr/nbv/nbv`.
+macOS arm64에서 테스트됨. Linux도 빌드는 되지만 v0.1에서는 우선순위 아님. Homebrew tap은 v0.2에서 계획.
 
 ## 사용법
 
@@ -100,7 +109,7 @@ v0.1 미지원: 마크다운 표, 수식(LaTeX), 인터랙티브 위젯, JPEG/SV
 ## 개발
 
 ```bash
-cargo test              # 82 tests (75 unit + 7 integration)
+cargo test              # 85 tests (78 unit + 7 integration)
 cargo build --release   # target/release/nbv (약 3 MB)
 ```
 

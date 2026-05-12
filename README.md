@@ -35,7 +35,18 @@ In Ghostty or iTerm2, matplotlib/seaborn PNG outputs render inline.
 
 ## Install
 
-### From source
+```bash
+cargo install nbv
+```
+
+Requires Rust 1.70 or newer. Or grab the prebuilt macOS arm64 binary from the [latest release](https://github.com/phd1000x-ux/nbv/releases/latest):
+
+```bash
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.0-aarch64-apple-darwin.tar.gz \
+  | tar -xz -C /usr/local/bin
+```
+
+Or build from source:
 
 ```bash
 git clone https://github.com/phd1000x-ux/nbv.git
@@ -43,9 +54,7 @@ cd nbv
 cargo install --path .
 ```
 
-Requires Rust 1.70 or newer. Tested on macOS arm64; Linux likely works but unverified for v0.1.
-
-Future paths (post-v0.1): `cargo install nbv` and `brew install gsr/nbv/nbv`.
+Tested on macOS arm64; Linux likely works but unverified for v0.1. Homebrew tap is planned for v0.2.
 
 ## Usage
 
@@ -100,7 +109,7 @@ Detection is automatic from `$TERM_PROGRAM` and `$TERM`. Override with `--no-col
 ## Develop
 
 ```bash
-cargo test              # 82 tests (75 unit + 7 integration)
+cargo test              # 85 tests (78 unit + 7 integration)
 cargo build --release   # ~3 MB binary at target/release/nbv
 ```
 
