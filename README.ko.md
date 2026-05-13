@@ -60,7 +60,14 @@ cargo install nbv
 **Prebuilt 바이너리 (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.3-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.2.0-aarch64-apple-darwin.tar.gz \
+  | tar -xz -C /usr/local/bin
+```
+
+**Prebuilt 바이너리 (Linux x86_64, static musl):**
+
+```bash
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.2.0-x86_64-unknown-linux-musl.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
@@ -71,8 +78,6 @@ git clone https://github.com/phd1000x-ux/nbv.git
 cd nbv
 cargo install --path .
 ```
-
-macOS arm64에서 테스트됨. Linux도 빌드는 되지만 v0.1에서는 우선순위 아님.
 
 `cargo install` 후 `~/.cargo/bin`이 `PATH`에 없다는 경고가 뜨면:
 

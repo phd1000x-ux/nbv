@@ -60,7 +60,14 @@ cargo install nbv
 **Prebuilt binary (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.3-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.2.0-aarch64-apple-darwin.tar.gz \
+  | tar -xz -C /usr/local/bin
+```
+
+**Prebuilt binary (Linux x86_64, static musl):**
+
+```bash
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.2.0-x86_64-unknown-linux-musl.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
@@ -71,8 +78,6 @@ git clone https://github.com/phd1000x-ux/nbv.git
 cd nbv
 cargo install --path .
 ```
-
-Tested on macOS arm64; Linux likely works but unverified for v0.1.
 
 If `cargo install` warns that `~/.cargo/bin` is not on your `PATH`, run:
 
