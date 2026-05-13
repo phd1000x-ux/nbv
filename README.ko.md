@@ -101,7 +101,7 @@ nbv -V                           # 버전
 
 ## 무엇을 어떻게 렌더링하나
 
-| ipynb 요소 | v0.1 동작 |
+| ipynb 요소 | v0.2 동작 |
 | --- | --- |
 | 마크다운 셀 | 헤더(H1~H6), 리스트, 블록인용, 인라인 코드, 코드 펜스(syntect로 하이라이팅), 굵게/기울임, 링크 텍스트 |
 | 코드 셀 | 커널 언어로 syntect 하이라이팅 (기본 Python) |
@@ -112,7 +112,7 @@ nbv -V                           # 버전
 | `stdout`/`stderr` 스트림 | 라벨 붙은 박스 안에 평문 |
 | 알 수 없는 셀/출력 타입 | `(skipped)` placeholder + stderr 경고 한 줄, 렌더링 계속 진행 |
 
-v0.1 미지원: 마크다운 표, 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
+v0.2 미지원: 마크다운 표, 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
 
 ## 터미널 지원
 
@@ -123,7 +123,7 @@ v0.1 미지원: 마크다운 표, 수식(LaTeX), 인터랙티브 위젯, JPEG/SV
 | kitty | ✓ | ✓ |
 | Terminal.app | ✓ | placeholder |
 | Alacritty | ✓ | placeholder |
-| tmux (모든 종류) | ✓ | placeholder (passthrough는 v0.2) |
+| tmux (모든 종류) | ✓ | placeholder (passthrough는 추후 지원) |
 | 파이프 / non-TTY | (`NO_COLOR` 따름) | placeholder |
 
 감지는 `$TERM_PROGRAM`과 `$TERM`을 보고 자동. `--no-color`, `--no-images`, `NO_COLOR=1`로 강제 가능.

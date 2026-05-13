@@ -101,7 +101,7 @@ That is the full surface. Anything not on a flag is auto-detected from the envir
 
 ## What gets rendered
 
-| ipynb element | v0.1 behavior |
+| ipynb element | v0.2 behavior |
 | --- | --- |
 | Markdown cells | Headers (H1–H6), lists, blockquotes, inline code, fenced code blocks (highlighted via syntect), bold/italic, link text |
 | Code cells | Syntect highlighting using the notebook's kernel language (defaults to Python) |
@@ -112,7 +112,7 @@ That is the full surface. Anything not on a flag is auto-detected from the envir
 | Stream `stdout`/`stderr` | Plain text inside its own cell box, labeled |
 | Unknown cell or output type | Skipped with a `(skipped)` placeholder and a one-line stderr warning; rendering continues |
 
-Not yet in v0.1: tables in markdown, math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
+Not yet in v0.2: tables in markdown, math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
 
 ## Terminal support
 
@@ -123,7 +123,7 @@ Not yet in v0.1: tables in markdown, math (LaTeX), interactive widgets, JPEG/SVG
 | kitty | ✓ | ✓ |
 | Terminal.app | ✓ | placeholder |
 | Alacritty | ✓ | placeholder |
-| tmux (any) | ✓ | placeholder (passthrough is v0.2) |
+| tmux (any) | ✓ | placeholder (passthrough on roadmap) |
 | Pipe / non-TTY | (respects `NO_COLOR`) | placeholder |
 
 Detection is automatic from `$TERM_PROGRAM` and `$TERM`. Override with `--no-color`, `--no-images`, or `NO_COLOR=1`.
