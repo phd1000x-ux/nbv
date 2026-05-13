@@ -67,6 +67,14 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
             // Carriage return은 터미널에서 cursor를 라인 시작으로 보내 박스를 덮어쓴다.
             // 일반 stream output(`\r\n`, tqdm progress 등)에서 흔하므로 drop.
             continue;
+        } else if ch == '\t' {
+            // Tab은 unicode-width 기준 0이지만 터미널은 다음 8-col stop으로 cursor 점프.
+            // 그대로 두면 visible width가 padding 계산보다 커져 박스 폭을 넘어 wrap된다.
+            // content position 기준 8-col stop으로 spaces expand.
+            let to_add = (8 - (used % 8)).min(inner_w.saturating_sub(used));
+            if to_add == 0 { break; }
+            trimmed.push_str(&" ".repeat(to_add));
+            used += to_add;
         } else {
             let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
             if used + cw > inner_w { break; }
@@ -185,6 +193,32 @@ mod tests {
         assert!(s.contains("\x1b[0m"), "RESET should be injected after truncated colored content");
         let line = s.trim_end_matches('\n');
         assert_eq!(ansi_width(line), 12);
+    }
+
+    #[test]
+    fn wrap_line_expands_tab_to_next_8col_stop() {
+        // \t는 다음 8-col stop까지 spaces로 변환되어야 한다. 그래야 박스 폭이 정확.
+        let mut buf = Vec::new();
+        let ctx = RenderCtx { is_tty: true, use_color: false, width: 40, image_backend: ImageBackend::Placeholder };
+        // "hello"(5) + \t → 다음 stop=8 → 3 spaces, 그 후 "world"(5)
+        wrap_line("hello\tworld", &ctx, &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(!s.contains('\t'), "tab must be expanded; got {:?}", s);
+        let line = s.trim_end_matches('\n');
+        assert_eq!(line.chars().count(), 40);
+        // 정확히 3 spaces가 hello와 world 사이에 들어가야
+        assert!(line.contains("hello   world"));
+    }
+
+    #[test]
+    fn wrap_line_tab_aligned_correctly_after_long_content() {
+        // 8 cols 이후의 \t는 그 다음 16-col stop까지 패딩
+        let mut buf = Vec::new();
+        let ctx = RenderCtx { is_tty: true, use_color: false, width: 60, image_backend: ImageBackend::Placeholder };
+        // 9 chars + \t → next stop = 16 → 7 spaces
+        wrap_line("123456789\tnext", &ctx, &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("123456789       next"), "tab to col 16, got {:?}", s);
     }
 
     #[test]
