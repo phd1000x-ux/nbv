@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="README.ko.md">한국어</a>
+  <a href="README.ko.md">Korean</a>
 </p>
 
 A fast terminal-native Jupyter notebook viewer.
