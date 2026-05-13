@@ -31,7 +31,7 @@ mod tests {
     #[test]
     fn renders_single_line_in_box_line() {
         let mut buf = Vec::new();
-        render(&"hello".to_string(), &ctx(), &mut buf).unwrap();
+        render("hello", &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("hello"));
         assert!(s.starts_with("│ "));
@@ -40,7 +40,7 @@ mod tests {
     #[test]
     fn renders_multiline_as_multiple_box_lines() {
         let mut buf = Vec::new();
-        render(&"a\nb\nc".to_string(), &ctx(), &mut buf).unwrap();
+        render("a\nb\nc", &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert_eq!(s.matches('\n').count(), 3);
     }
@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn trailing_newline_does_not_create_empty_line() {
         let mut buf = Vec::new();
-        render(&"a\n".to_string(), &ctx(), &mut buf).unwrap();
+        render("a\n", &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert_eq!(s.matches('\n').count(), 1);
     }

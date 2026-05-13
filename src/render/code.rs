@@ -65,11 +65,11 @@ fn theme_palette(theme: &Theme) -> (Option<Color>, Color) {
 /// syntect의 일부 default 테마(예: base16-*.dark)는 `./path` 같은 토큰의 fg를
 /// 정확히 theme background 색으로 emit해서 화면에서 보이지 않는다. 이런 토큰만
 /// 골라 default fg로 교체한다. 다른 토큰은 그대로.
-fn sanitize_invisible_fg<'a>(
-    ranges: Vec<(Style, &'a str)>,
+fn sanitize_invisible_fg(
+    ranges: Vec<(Style, &str)>,
     bg: Option<Color>,
     default_fg: Color,
-) -> Vec<(Style, &'a str)> {
+) -> Vec<(Style, &str)> {
     let Some(bg) = bg else {
         return ranges;
     };
