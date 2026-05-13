@@ -63,6 +63,10 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
                 trimmed.push(chars.next().unwrap());
                 if ('@'..='~').contains(&nc) { break; }
             }
+        } else if ch == '\r' {
+            // Carriage return은 터미널에서 cursor를 라인 시작으로 보내 박스를 덮어쓴다.
+            // 일반 stream output(`\r\n`, tqdm progress 등)에서 흔하므로 drop.
+            continue;
         } else {
             let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
             if used + cw > inner_w { break; }
@@ -181,6 +185,21 @@ mod tests {
         assert!(s.contains("\x1b[0m"), "RESET should be injected after truncated colored content");
         let line = s.trim_end_matches('\n');
         assert_eq!(ansi_width(line), 12);
+    }
+
+    #[test]
+    fn wrap_line_drops_carriage_return() {
+        // stream output에 흔한 \r\n에서 \r이 박스 padding을 덮어쓰지 않도록 drop.
+        let mut buf = Vec::new();
+        let ctx = RenderCtx { is_tty: true, use_color: false, width: 30, image_backend: ImageBackend::Placeholder };
+        // text::render가 `\n`은 떼고 보내지만 `\r`은 남아 들어옴
+        wrap_line("hello\r", &ctx, &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(!s.contains('\r'), "output must not contain CR; got {:?}", s);
+        let line = s.trim_end_matches('\n');
+        assert_eq!(line.chars().count(), 30);
+        assert!(line.starts_with("│ hello"));
+        assert!(line.ends_with(" │"));
     }
 
     #[test]
