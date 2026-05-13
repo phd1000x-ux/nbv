@@ -125,13 +125,10 @@ Detection is automatic from `$TERM_PROGRAM` and `$TERM`. Override with `--no-col
 ## Develop
 
 ```bash
-cargo test              # 85 tests (78 unit + 7 integration)
+cargo test              # 106 tests (96 unit + 10 integration)
 cargo build --release   # ~3 MB binary at target/release/nbv
 ```
 
-Design spec: `docs/superpowers/specs/2026-05-12-nbv-design.md`
-Implementation plan: `docs/superpowers/plans/2026-05-12-nbv-implementation.md`
-
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -125,13 +125,10 @@ v0.1 미지원: 마크다운 표, 수식(LaTeX), 인터랙티브 위젯, JPEG/SV
 ## 개발
 
 ```bash
-cargo test              # 85 tests (78 unit + 7 integration)
+cargo test              # 106 tests (96 unit + 10 integration)
 cargo build --release   # target/release/nbv (약 3 MB)
 ```
 
-설계 스펙: `docs/superpowers/specs/2026-05-12-nbv-design.md`
-구현 플랜: `docs/superpowers/plans/2026-05-12-nbv-implementation.md`
-
 ## 라이선스
 
-MIT
+[MIT](LICENSE)
