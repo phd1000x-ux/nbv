@@ -6,7 +6,11 @@ use crate::render::frame;
 pub fn render(traceback: &[String], ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     for entry in traceback {
         for line in entry.split('\n') {
-            let line = if ctx.use_color { line.to_string() } else { strip_ansi(line) };
+            let line = if ctx.use_color {
+                line.to_string()
+            } else {
+                strip_ansi(line)
+            };
             frame::wrap_line(&line, ctx, w)?;
         }
     }
@@ -23,7 +27,9 @@ fn strip_ansi(s: &str) -> String {
             while let Some(&nc) = chars.peek() {
                 chars.next();
                 // 종료는 0x40~0x7E 범위 ASCII
-                if ('@'..='~').contains(&nc) { break; }
+                if ('@'..='~').contains(&nc) {
+                    break;
+                }
             }
         } else {
             out.push(c);
@@ -43,15 +49,17 @@ mod tests {
     use crate::env::{ImageBackend, RenderCtx};
 
     fn ctx(use_color: bool) -> RenderCtx {
-        RenderCtx { is_tty: true, use_color, width: 60, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color,
+            width: 60,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     #[test]
     fn renders_each_traceback_line() {
-        let tb: Vec<String> = vec![
-            "ValueError: bad".into(),
-            "  at line 1".into(),
-        ];
+        let tb: Vec<String> = vec!["ValueError: bad".into(), "  at line 1".into()];
         let mut buf = Vec::new();
         render(&tb, &ctx(true), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();

@@ -53,11 +53,21 @@ pub struct TestEnv {
 
 #[cfg(test)]
 impl EnvProbe for TestEnv {
-    fn is_tty(&self) -> bool { self.is_tty }
-    fn no_color(&self) -> bool { self.no_color }
-    fn term_program(&self) -> Option<String> { self.term_program.clone() }
-    fn term(&self) -> Option<String> { self.term.clone() }
-    fn columns(&self) -> Option<usize> { self.columns }
+    fn is_tty(&self) -> bool {
+        self.is_tty
+    }
+    fn no_color(&self) -> bool {
+        self.no_color
+    }
+    fn term_program(&self) -> Option<String> {
+        self.term_program.clone()
+    }
+    fn term(&self) -> Option<String> {
+        self.term.clone()
+    }
+    fn columns(&self) -> Option<usize> {
+        self.columns
+    }
 }
 
 pub fn detect(args_no_color: bool, args_no_images: bool) -> RenderCtx {
@@ -81,7 +91,12 @@ pub fn detect_with(env: &impl EnvProbe, args_no_color: bool, args_no_images: boo
         ImageBackend::Placeholder
     };
 
-    RenderCtx { is_tty, use_color, width, image_backend }
+    RenderCtx {
+        is_tty,
+        use_color,
+        width,
+        image_backend,
+    }
 }
 
 #[cfg(test)]
@@ -97,7 +112,9 @@ mod tests {
             term: Some("xterm-ghostty".into()),
             columns: Some(120),
         };
-        let ctx = detect_with(&env, /* args.no_color */ false, /* args.no_images */ false);
+        let ctx = detect_with(
+            &env, /* args.no_color */ false, /* args.no_images */ false,
+        );
         assert_eq!(ctx.image_backend, ImageBackend::Kitty);
         assert!(ctx.use_color);
         assert!(ctx.is_tty);
@@ -107,19 +124,22 @@ mod tests {
     #[test]
     fn iterm_tty_picks_iterm2() {
         let env = TestEnv {
-            is_tty: true, no_color: false,
+            is_tty: true,
+            no_color: false,
             term_program: Some("iTerm.app".into()),
-            term: None, columns: None,
+            term: None,
+            columns: None,
         };
         let ctx = detect_with(&env, false, false);
         assert_eq!(ctx.image_backend, ImageBackend::ITerm2);
-        assert_eq!(ctx.width, 80);  // default
+        assert_eq!(ctx.width, 80); // default
     }
 
     #[test]
     fn kitty_term_var_picks_kitty() {
         let env = TestEnv {
-            is_tty: true, no_color: false,
+            is_tty: true,
+            no_color: false,
             term_program: None,
             term: Some("xterm-kitty".into()),
             columns: None,
@@ -131,7 +151,8 @@ mod tests {
     #[test]
     fn other_terminal_picks_placeholder() {
         let env = TestEnv {
-            is_tty: true, no_color: false,
+            is_tty: true,
+            no_color: false,
             term_program: Some("Apple_Terminal".into()),
             term: Some("xterm-256color".into()),
             columns: None,
@@ -143,9 +164,11 @@ mod tests {
     #[test]
     fn non_tty_forces_placeholder_and_no_color() {
         let env = TestEnv {
-            is_tty: false, no_color: false,
+            is_tty: false,
+            no_color: false,
             term_program: Some("ghostty".into()),
-            term: None, columns: None,
+            term: None,
+            columns: None,
         };
         let ctx = detect_with(&env, false, false);
         assert_eq!(ctx.image_backend, ImageBackend::Placeholder);
@@ -155,9 +178,11 @@ mod tests {
     #[test]
     fn no_color_env_var_disables_color() {
         let env = TestEnv {
-            is_tty: true, no_color: true,
+            is_tty: true,
+            no_color: true,
             term_program: Some("ghostty".into()),
-            term: None, columns: None,
+            term: None,
+            columns: None,
         };
         let ctx = detect_with(&env, false, false);
         assert!(!ctx.use_color);
@@ -165,7 +190,13 @@ mod tests {
 
     #[test]
     fn no_color_flag_overrides() {
-        let env = TestEnv { is_tty: true, no_color: false, term_program: None, term: None, columns: None };
+        let env = TestEnv {
+            is_tty: true,
+            no_color: false,
+            term_program: None,
+            term: None,
+            columns: None,
+        };
         let ctx = detect_with(&env, /* no_color */ true, false);
         assert!(!ctx.use_color);
     }
@@ -173,9 +204,11 @@ mod tests {
     #[test]
     fn no_images_flag_forces_placeholder() {
         let env = TestEnv {
-            is_tty: true, no_color: false,
+            is_tty: true,
+            no_color: false,
             term_program: Some("ghostty".into()),
-            term: None, columns: None,
+            term: None,
+            columns: None,
         };
         let ctx = detect_with(&env, false, /* no_images */ true);
         assert_eq!(ctx.image_backend, ImageBackend::Placeholder);

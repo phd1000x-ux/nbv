@@ -21,7 +21,11 @@ fn simple_notebook_renders_markdown_and_code() {
 
 #[test]
 fn with_image_uses_placeholder_when_no_images() {
-    let (out, _err, code) = run(&["--no-color", "--no-images", "tests/fixtures/with_image.ipynb"]);
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "tests/fixtures/with_image.ipynb",
+    ]);
     assert_eq!(code, 0);
     assert!(out.contains("PNG"));
     assert!(out.contains("1\u{00d7}1") || out.contains("1x1"));
@@ -55,23 +59,43 @@ fn invalid_json_exits_with_code_3() {
 fn missing_arg_exits_with_code_2_and_prints_usage() {
     let (_out, err, code) = run(&[]);
     assert_eq!(code, 2);
-    assert!(err.contains("Usage:"), "stderr should include usage: {}", err);
-    assert!(err.contains("setup"), "stderr should mention setup subcommand: {}", err);
-    assert!(err.contains("--help"), "stderr should hint at --help: {}", err);
+    assert!(
+        err.contains("Usage:"),
+        "stderr should include usage: {}",
+        err
+    );
+    assert!(
+        err.contains("setup"),
+        "stderr should mention setup subcommand: {}",
+        err
+    );
+    assert!(
+        err.contains("--help"),
+        "stderr should hint at --help: {}",
+        err
+    );
 }
 
 #[test]
 fn setup_help_lists_subcommand() {
     let (out, _err, code) = run(&["--help"]);
     assert_eq!(code, 0);
-    assert!(out.contains("setup"), "top-level help should mention setup: {}", out);
+    assert!(
+        out.contains("setup"),
+        "top-level help should mention setup: {}",
+        out
+    );
 }
 
 #[test]
 fn setup_subcommand_help_works() {
     let (out, _err, code) = run(&["setup", "--help"]);
     assert_eq!(code, 0);
-    assert!(out.contains("--yes") || out.contains("-y"), "setup --help should mention --yes: {}", out);
+    assert!(
+        out.contains("--yes") || out.contains("-y"),
+        "setup --help should mention --yes: {}",
+        out
+    );
 }
 
 #[test]
@@ -104,5 +128,9 @@ fn large_notebook_renders_in_reasonable_time() {
     let dur = start.elapsed();
     assert_eq!(code, 0);
     assert!(out.contains("x_199"));
-    assert!(dur.as_secs() < 5, "rendering 200 cells should be < 5s, was {:?}", dur);
+    assert!(
+        dur.as_secs() < 5,
+        "rendering 200 cells should be < 5s, was {:?}",
+        dur
+    );
 }

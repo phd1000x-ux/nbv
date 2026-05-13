@@ -20,7 +20,12 @@ mod tests {
     use crate::env::{ImageBackend, RenderCtx};
 
     fn ctx() -> RenderCtx {
-        RenderCtx { is_tty: true, use_color: false, width: 30, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width: 30,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     #[test]

@@ -17,7 +17,9 @@ fn ansi_width(s: &str) -> usize {
             if let Some('[') = chars.clone().next() {
                 chars.next();
                 for nc in chars.by_ref() {
-                    if ('@'..='~').contains(&nc) { break; }
+                    if ('@'..='~').contains(&nc) {
+                        break;
+                    }
                 }
             }
             // Non-CSI escapes (OSC, etc.): the \x1b is consumed; next iteration continues.
@@ -61,7 +63,9 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
             had_style = true;
             while let Some(&nc) = chars.peek() {
                 trimmed.push(chars.next().unwrap());
-                if ('@'..='~').contains(&nc) { break; }
+                if ('@'..='~').contains(&nc) {
+                    break;
+                }
             }
         } else if ch == '\r' {
             // Carriage return은 터미널에서 cursor를 라인 시작으로 보내 박스를 덮어쓴다.
@@ -72,12 +76,16 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
             // 그대로 두면 visible width가 padding 계산보다 커져 박스 폭을 넘어 wrap된다.
             // content position 기준 8-col stop으로 spaces expand.
             let to_add = (8 - (used % 8)).min(inner_w.saturating_sub(used));
-            if to_add == 0 { break; }
+            if to_add == 0 {
+                break;
+            }
             trimmed.push_str(&" ".repeat(to_add));
             used += to_add;
         } else {
             let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-            if used + cw > inner_w { break; }
+            if used + cw > inner_w {
+                break;
+            }
             trimmed.push(ch);
             used += cw;
         }
@@ -96,7 +104,12 @@ mod tests {
     use crate::env::{ImageBackend, RenderCtx};
 
     fn ctx(width: usize) -> RenderCtx {
-        RenderCtx { is_tty: true, use_color: false, width, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     #[test]
@@ -158,39 +171,63 @@ mod tests {
     fn open_with_colored_label_still_fills_full_width() {
         use crate::theme;
         let mut buf = Vec::new();
-        let ctx = RenderCtx { is_tty: true, use_color: true, width: 30, image_backend: ImageBackend::Placeholder };
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: true,
+            width: 30,
+            image_backend: ImageBackend::Placeholder,
+        };
         let label = theme::colorize_code_header("In [1] code (python)", true);
         open(&label, &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         let line = s.trim_end_matches('\n');
         // The visible width must equal ctx.width (30), even though the byte length is much larger.
         let visible = ansi_width(line);
-        assert_eq!(visible, 30, "visible width should equal ctx.width, got {visible}");
+        assert_eq!(
+            visible, 30,
+            "visible width should equal ctx.width, got {visible}"
+        );
     }
 
     #[test]
     fn wrap_line_with_colored_content_keeps_visible_width() {
         // 컬러 escape가 들어간 content도 visible width 기준으로 정확히 padding되어야 한다.
         let mut buf = Vec::new();
-        let ctx = RenderCtx { is_tty: true, use_color: true, width: 30, image_backend: ImageBackend::Placeholder };
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: true,
+            width: 30,
+            image_backend: ImageBackend::Placeholder,
+        };
         let content = format!("{}red{}", theme::FG_RED, theme::RESET);
         wrap_line(&content, &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         let line = s.trim_end_matches('\n');
         let visible = ansi_width(line);
-        assert_eq!(visible, 30, "visible width should equal ctx.width, got {visible}");
+        assert_eq!(
+            visible, 30,
+            "visible width should equal ctx.width, got {visible}"
+        );
     }
 
     #[test]
     fn wrap_line_truncates_colored_content_at_visible_width() {
         // 색이 켜진 채로 짤리면 padding이 그 색으로 새지 않도록 RESET 삽입.
         let mut buf = Vec::new();
-        let ctx = RenderCtx { is_tty: true, use_color: true, width: 12, image_backend: ImageBackend::Placeholder };
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: true,
+            width: 12,
+            image_backend: ImageBackend::Placeholder,
+        };
         // inner_w = 8. 9자보다 길게 보내야 truncation.
         let content = format!("{}abcdefghijklmnop", theme::FG_RED);
         wrap_line(&content, &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(s.contains("\x1b[0m"), "RESET should be injected after truncated colored content");
+        assert!(
+            s.contains("\x1b[0m"),
+            "RESET should be injected after truncated colored content"
+        );
         let line = s.trim_end_matches('\n');
         assert_eq!(ansi_width(line), 12);
     }
@@ -199,7 +236,12 @@ mod tests {
     fn wrap_line_expands_tab_to_next_8col_stop() {
         // \t는 다음 8-col stop까지 spaces로 변환되어야 한다. 그래야 박스 폭이 정확.
         let mut buf = Vec::new();
-        let ctx = RenderCtx { is_tty: true, use_color: false, width: 40, image_backend: ImageBackend::Placeholder };
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width: 40,
+            image_backend: ImageBackend::Placeholder,
+        };
         // "hello"(5) + \t → 다음 stop=8 → 3 spaces, 그 후 "world"(5)
         wrap_line("hello\tworld", &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -214,18 +256,32 @@ mod tests {
     fn wrap_line_tab_aligned_correctly_after_long_content() {
         // 8 cols 이후의 \t는 그 다음 16-col stop까지 패딩
         let mut buf = Vec::new();
-        let ctx = RenderCtx { is_tty: true, use_color: false, width: 60, image_backend: ImageBackend::Placeholder };
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width: 60,
+            image_backend: ImageBackend::Placeholder,
+        };
         // 9 chars + \t → next stop = 16 → 7 spaces
         wrap_line("123456789\tnext", &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(s.contains("123456789       next"), "tab to col 16, got {:?}", s);
+        assert!(
+            s.contains("123456789       next"),
+            "tab to col 16, got {:?}",
+            s
+        );
     }
 
     #[test]
     fn wrap_line_drops_carriage_return() {
         // stream output에 흔한 \r\n에서 \r이 박스 padding을 덮어쓰지 않도록 drop.
         let mut buf = Vec::new();
-        let ctx = RenderCtx { is_tty: true, use_color: false, width: 30, image_backend: ImageBackend::Placeholder };
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width: 30,
+            image_backend: ImageBackend::Placeholder,
+        };
         // text::render가 `\n`은 떼고 보내지만 `\r`은 남아 들어옴
         wrap_line("hello\r", &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -241,7 +297,12 @@ mod tests {
         // syntect가 emit하는 24-bit 컬러 escape는 \x1b[38;2;R;G;Bm 형태로 17-18 chars.
         // 이런 escape이 잔뜩 들어 있어도 visible width는 짧아야 한다.
         let mut buf = Vec::new();
-        let ctx = RenderCtx { is_tty: true, use_color: true, width: 30, image_backend: ImageBackend::Placeholder };
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: true,
+            width: 30,
+            image_backend: ImageBackend::Placeholder,
+        };
         let content = "\x1b[38;2;192;197;206mx\x1b[0m \x1b[38;2;192;197;206m=\x1b[0m \x1b[38;2;192;197;206m1\x1b[0m";
         wrap_line(content, &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();

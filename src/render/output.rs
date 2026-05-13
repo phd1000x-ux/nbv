@@ -1,5 +1,5 @@
-use std::io::{self, Write};
 use base64::Engine;
+use std::io::{self, Write};
 
 use crate::env::RenderCtx;
 use crate::ipynb::model::{MimeBundle, Output, StreamName};
@@ -7,7 +7,13 @@ use crate::render::{frame, image, text, traceback};
 use crate::theme;
 
 /// 단일 Output을 박스 안에서 렌더.
-pub fn render(out: &Output, cell_idx: usize, out_idx: usize, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+pub fn render(
+    out: &Output,
+    cell_idx: usize,
+    out_idx: usize,
+    ctx: &RenderCtx,
+    w: &mut impl Write,
+) -> io::Result<()> {
     match out {
         Output::Stream { name, text: t } => {
             let label = format!("Out [{}] ── stream ({})", cell_idx, stream_label(name));
@@ -15,13 +21,20 @@ pub fn render(out: &Output, cell_idx: usize, out_idx: usize, ctx: &RenderCtx, w:
             text::render(t, ctx, w)?;
             frame::close(ctx, w)?;
         }
-        Output::ExecuteResult { data, execution_count } => {
+        Output::ExecuteResult {
+            data,
+            execution_count,
+        } => {
             render_bundle(data, *execution_count, cell_idx, out_idx, ctx, w)?;
         }
         Output::DisplayData { data } => {
             render_bundle(data, None, cell_idx, out_idx, ctx, w)?;
         }
-        Output::Error { ename, evalue, traceback: tb } => {
+        Output::Error {
+            ename,
+            evalue,
+            traceback: tb,
+        } => {
             let label = format!("Error: {} — {}", ename, evalue);
             let label = theme::colorize_error_header(&label, ctx.use_color);
             frame::open(&label, ctx, w)?;
@@ -38,7 +51,14 @@ pub fn render(out: &Output, cell_idx: usize, out_idx: usize, ctx: &RenderCtx, w:
     Ok(())
 }
 
-fn render_bundle(bundle: &MimeBundle, exec_count: Option<u64>, cell_idx: usize, out_idx: usize, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+fn render_bundle(
+    bundle: &MimeBundle,
+    exec_count: Option<u64>,
+    cell_idx: usize,
+    out_idx: usize,
+    ctx: &RenderCtx,
+    w: &mut impl Write,
+) -> io::Result<()> {
     // 우선순위: image/png (백엔드 가능 시) → image/png (placeholder) → text/plain → 기타 placeholder
     if let Some(b64) = &bundle.image_png {
         let mime = "image/png";
@@ -68,7 +88,8 @@ fn render_bundle(bundle: &MimeBundle, exec_count: Option<u64>, cell_idx: usize, 
     }
     // 기타 MIME: ipynb 권장 우선순위
     let priority = ["text/html", "text/latex", "application/json"];
-    let key = priority.iter()
+    let key = priority
+        .iter()
         .find(|p| bundle.other.contains_key(**p))
         .map(|s| s.to_string())
         .or_else(|| bundle.other.keys().min().cloned());
@@ -87,7 +108,10 @@ fn header(label: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
 }
 
 fn stream_label(name: &StreamName) -> &'static str {
-    match name { StreamName::Stdout => "stdout", StreamName::Stderr => "stderr" }
+    match name {
+        StreamName::Stdout => "stdout",
+        StreamName::Stderr => "stderr",
+    }
 }
 
 #[cfg(test)]
@@ -98,12 +122,20 @@ mod tests {
     use std::collections::HashMap;
 
     fn ctx_placeholder() -> RenderCtx {
-        RenderCtx { is_tty: true, use_color: false, width: 60, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width: 60,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     #[test]
     fn stream_stdout_renders_text() {
-        let out = Output::Stream { name: StreamName::Stdout, text: "hello\n".into() };
+        let out = Output::Stream {
+            name: StreamName::Stdout,
+            text: "hello\n".into(),
+        };
         let mut buf = Vec::new();
         render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -119,7 +151,10 @@ mod tests {
             image_png: Some(png_b64.into()),
             other: HashMap::new(),
         };
-        let out = Output::ExecuteResult { data: bundle, execution_count: Some(1) };
+        let out = Output::ExecuteResult {
+            data: bundle,
+            execution_count: Some(1),
+        };
         let mut buf = Vec::new();
         render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -129,8 +164,15 @@ mod tests {
 
     #[test]
     fn execute_result_falls_back_to_text_plain() {
-        let bundle = MimeBundle { text_plain: Some("42".into()), image_png: None, other: HashMap::new() };
-        let out = Output::ExecuteResult { data: bundle, execution_count: Some(1) };
+        let bundle = MimeBundle {
+            text_plain: Some("42".into()),
+            image_png: None,
+            other: HashMap::new(),
+        };
+        let out = Output::ExecuteResult {
+            data: bundle,
+            execution_count: Some(1),
+        };
         let mut buf = Vec::new();
         render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -140,9 +182,19 @@ mod tests {
     #[test]
     fn execute_result_unknown_mime_shows_placeholder() {
         let mut other = HashMap::new();
-        other.insert("text/html".to_string(), serde_json::Value::String("<table/>".into()));
-        let bundle = MimeBundle { text_plain: None, image_png: None, other };
-        let out = Output::ExecuteResult { data: bundle, execution_count: Some(1) };
+        other.insert(
+            "text/html".to_string(),
+            serde_json::Value::String("<table/>".into()),
+        );
+        let bundle = MimeBundle {
+            text_plain: None,
+            image_png: None,
+            other,
+        };
+        let out = Output::ExecuteResult {
+            data: bundle,
+            execution_count: Some(1),
+        };
         let mut buf = Vec::new();
         render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();

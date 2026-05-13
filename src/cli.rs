@@ -1,8 +1,12 @@
-use std::path::PathBuf;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
-#[command(name = "nbv", version, about = "A fast terminal Jupyter notebook viewer")]
+#[command(
+    name = "nbv",
+    version,
+    about = "A fast terminal Jupyter notebook viewer"
+)]
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Command>,

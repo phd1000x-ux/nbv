@@ -24,11 +24,16 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 let n = heading_n(level);
                 let prefix = "#".repeat(n);
                 let header_text = format!("{} ", prefix);
-                acc.push_str(&theme::colorize_markdown_header(&header_text, ctx.use_color));
+                acc.push_str(&theme::colorize_markdown_header(
+                    &header_text,
+                    ctx.use_color,
+                ));
                 _style.bold = true;
             }
             Event::End(TagEnd::Heading(_)) => {
-                if ctx.use_color { acc.push_str(theme::RESET); }
+                if ctx.use_color {
+                    acc.push_str(theme::RESET);
+                }
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
                 _style = Style::default();
             }
@@ -37,27 +42,39 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
             }
             Event::Start(Tag::Emphasis) => {
-                if ctx.use_color { acc.push_str(theme::ITALIC); }
+                if ctx.use_color {
+                    acc.push_str(theme::ITALIC);
+                }
                 _style.italic = true;
             }
             Event::End(TagEnd::Emphasis) => {
-                if ctx.use_color { acc.push_str(theme::RESET); }
+                if ctx.use_color {
+                    acc.push_str(theme::RESET);
+                }
                 _style.italic = false;
             }
             Event::Start(Tag::Strong) => {
-                if ctx.use_color { acc.push_str(theme::BOLD); }
+                if ctx.use_color {
+                    acc.push_str(theme::BOLD);
+                }
                 _style.bold = true;
             }
             Event::End(TagEnd::Strong) => {
-                if ctx.use_color { acc.push_str(theme::RESET); }
+                if ctx.use_color {
+                    acc.push_str(theme::RESET);
+                }
                 _style.bold = false;
             }
             Event::Code(c) => {
-                if ctx.use_color { acc.push_str(theme::FG_YELLOW); }
+                if ctx.use_color {
+                    acc.push_str(theme::FG_YELLOW);
+                }
                 acc.push('`');
                 acc.push_str(&c);
                 acc.push('`');
-                if ctx.use_color { acc.push_str(theme::RESET); }
+                if ctx.use_color {
+                    acc.push_str(theme::RESET);
+                }
             }
             Event::Start(Tag::CodeBlock(kind)) => {
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
@@ -131,8 +148,16 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
     Ok(())
 }
 
-fn flush_line(acc: &mut String, quote_depth: u32, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
-    if acc.trim().is_empty() { acc.clear(); return Ok(()); }
+fn flush_line(
+    acc: &mut String,
+    quote_depth: u32,
+    ctx: &RenderCtx,
+    w: &mut impl Write,
+) -> io::Result<()> {
+    if acc.trim().is_empty() {
+        acc.clear();
+        return Ok(());
+    }
     let line = if quote_depth > 0 {
         let prefix = "> ".repeat(quote_depth as usize);
         format!("{}{}", theme::dim(&prefix, ctx.use_color), acc)
@@ -146,15 +171,24 @@ fn flush_line(acc: &mut String, quote_depth: u32, ctx: &RenderCtx, w: &mut impl 
 
 fn heading_n(level: HeadingLevel) -> usize {
     match level {
-        HeadingLevel::H1 => 1, HeadingLevel::H2 => 2, HeadingLevel::H3 => 3,
-        HeadingLevel::H4 => 4, HeadingLevel::H5 => 5, HeadingLevel::H6 => 6,
+        HeadingLevel::H1 => 1,
+        HeadingLevel::H2 => 2,
+        HeadingLevel::H3 => 3,
+        HeadingLevel::H4 => 4,
+        HeadingLevel::H5 => 5,
+        HeadingLevel::H6 => 6,
     }
 }
 
 #[derive(Default)]
-struct Style { bold: bool, italic: bool }
+struct Style {
+    bold: bool,
+    italic: bool,
+}
 
-struct ListState { number: Option<u64> }
+struct ListState {
+    number: Option<u64>,
+}
 
 #[cfg(test)]
 mod tests {
@@ -162,7 +196,12 @@ mod tests {
     use crate::env::{ImageBackend, RenderCtx};
 
     fn ctx(use_color: bool) -> RenderCtx {
-        RenderCtx { is_tty: true, use_color, width: 60, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color,
+            width: 60,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     #[test]
@@ -211,7 +250,12 @@ mod tests {
     fn fenced_code_block_handed_to_syntect() {
         let mut buf = Vec::new();
         // wider ctx for syntect color escapes
-        let ctx_wide = RenderCtx { is_tty: true, use_color: true, width: 200, image_backend: ImageBackend::Placeholder };
+        let ctx_wide = RenderCtx {
+            is_tty: true,
+            use_color: true,
+            width: 200,
+            image_backend: ImageBackend::Placeholder,
+        };
         render("```python\nx = 1\n```", &ctx_wide, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x") && s.contains("="));

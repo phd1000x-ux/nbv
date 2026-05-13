@@ -24,7 +24,9 @@ fn main() -> ExitCode {
             eprintln!();
             eprintln!("Usage:");
             eprintln!("    nbv [OPTIONS] <FILE>      Render a Jupyter notebook to stdout");
-            eprintln!("    nbv setup [--yes]         Add the nbv binary directory to your shell PATH");
+            eprintln!(
+                "    nbv setup [--yes]         Add the nbv binary directory to your shell PATH"
+            );
             eprintln!();
             eprintln!("Run `nbv --help` for more details.");
             return ExitCode::from(2);
@@ -48,7 +50,9 @@ fn main() -> ExitCode {
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());
     if let Err(e) = render::render_notebook(&nb, &ctx, &mut w) {
-        if e.kind() == io::ErrorKind::BrokenPipe { return ExitCode::SUCCESS; }
+        if e.kind() == io::ErrorKind::BrokenPipe {
+            return ExitCode::SUCCESS;
+        }
         eprintln!("nbv: write error: {}", e);
         return ExitCode::from(1);
     }

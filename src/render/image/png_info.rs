@@ -4,11 +4,17 @@ const SIGNATURE: &[u8] = &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
 
 /// PNG bytes에서 (width, height)를 반환. 시그니처/IHDR 검증 실패 시 None.
 pub fn dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
-    if bytes.len() < 24 { return None; }
-    if &bytes[..8] != SIGNATURE { return None; }
+    if bytes.len() < 24 {
+        return None;
+    }
+    if &bytes[..8] != SIGNATURE {
+        return None;
+    }
     // 청크 헤더: 4 bytes length, 4 bytes type
     let chunk_type = &bytes[12..16];
-    if chunk_type != b"IHDR" { return None; }
+    if chunk_type != b"IHDR" {
+        return None;
+    }
     let width = u32::from_be_bytes(bytes[16..20].try_into().ok()?);
     let height = u32::from_be_bytes(bytes[20..24].try_into().ok()?);
     Some((width, height))
@@ -23,7 +29,9 @@ mod tests {
     const ONE_PIXEL: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
 
     fn one_pixel_bytes() -> Vec<u8> {
-        base64::engine::general_purpose::STANDARD.decode(ONE_PIXEL).unwrap()
+        base64::engine::general_purpose::STANDARD
+            .decode(ONE_PIXEL)
+            .unwrap()
     }
 
     #[test]

@@ -1,10 +1,10 @@
+pub mod code;
 pub mod frame;
+pub mod image;
+pub mod markdown;
+pub mod output;
 pub mod text;
 pub mod traceback;
-pub mod code;
-pub mod markdown;
-pub mod image;
-pub mod output;
 
 use std::io::{self, Write};
 
@@ -14,7 +14,10 @@ use crate::theme;
 
 /// 노트북 전체를 셀 단위로 렌더. 매 셀 후 flush.
 pub fn render_notebook(nb: &Notebook, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
-    let lang = nb.metadata.kernelspec.as_ref()
+    let lang = nb
+        .metadata
+        .kernelspec
+        .as_ref()
         .and_then(|k| k.language.clone())
         .or_else(|| nb.metadata.language_info.as_ref().map(|l| l.name.clone()))
         .unwrap_or_else(|| "python".into());
@@ -25,10 +28,22 @@ pub fn render_notebook(nb: &Notebook, ctx: &RenderCtx, w: &mut impl Write) -> io
     Ok(())
 }
 
-pub fn render_cell(cell: &Cell, idx: usize, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+pub fn render_cell(
+    cell: &Cell,
+    idx: usize,
+    lang: &str,
+    ctx: &RenderCtx,
+    w: &mut impl Write,
+) -> io::Result<()> {
     match cell {
-        Cell::Code { source, outputs, execution_count } => {
-            let n = execution_count.map(|n| n.to_string()).unwrap_or_else(|| " ".into());
+        Cell::Code {
+            source,
+            outputs,
+            execution_count,
+        } => {
+            let n = execution_count
+                .map(|n| n.to_string())
+                .unwrap_or_else(|| " ".into());
             let label = format!("In [{}] ── code ({})", n, lang);
             let label = theme::colorize_code_header(&label, ctx.use_color);
             frame::open(&label, ctx, w)?;
@@ -68,7 +83,12 @@ mod tests {
     use crate::ipynb::parse;
 
     fn ctx() -> RenderCtx {
-        RenderCtx { is_tty: true, use_color: false, width: 60, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width: 60,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     #[test]
@@ -82,11 +102,14 @@ mod tests {
 
     #[test]
     fn renders_code_with_outputs() {
-        let nb = parse::from_str(r#"{
+        let nb = parse::from_str(
+            r#"{
             "cells":[{"cell_type":"code","source":"print(1)","metadata":{},"execution_count":1,
                 "outputs":[{"output_type":"stream","name":"stdout","text":"1\n"}]}],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"#).unwrap();
+        }"#,
+        )
+        .unwrap();
         let mut buf = Vec::new();
         render_notebook(&nb, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -96,13 +119,16 @@ mod tests {
 
     #[test]
     fn unknown_cell_logs_to_stderr_and_continues() {
-        let nb = parse::from_str(r#"{
+        let nb = parse::from_str(
+            r#"{
             "cells":[
                 {"cell_type":"weird","source":"x","metadata":{}},
                 {"cell_type":"markdown","source":"normal","metadata":{}}
             ],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"#).unwrap();
+        }"#,
+        )
+        .unwrap();
         let mut buf = Vec::new();
         render_notebook(&nb, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();

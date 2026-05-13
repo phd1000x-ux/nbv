@@ -23,7 +23,8 @@ fn theme_set() -> &'static ThemeSet {
 pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     let ss = syntax_set();
     let ts = theme_set();
-    let syntax = ss.find_syntax_by_token(lang)
+    let syntax = ss
+        .find_syntax_by_token(lang)
         .or_else(|| ss.find_syntax_by_token("python"))
         .unwrap_or_else(|| ss.find_syntax_plain_text());
     let theme = &ts.themes["base16-ocean.dark"];
@@ -31,13 +32,20 @@ pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> 
     let (bg, default_fg) = theme_palette(theme);
 
     for line in LinesWithEndings::from(source) {
-        let ranges: Vec<(Style, &str)> = hl.highlight_line(line, ss)
+        let ranges: Vec<(Style, &str)> = hl
+            .highlight_line(line, ss)
             .unwrap_or_else(|_| vec![(Style::default(), line)]);
         let safe = sanitize_invisible_fg(ranges, bg, default_fg);
         let mut escaped = as_24_bit_terminal_escaped(&safe[..], false);
         // syntect 출력은 줄바꿈을 포함; 박스에 넣기 위해 제거
-        while escaped.ends_with('\n') { escaped.pop(); }
-        let to_render = if ctx.use_color { escaped } else { strip_ansi(&escaped) };
+        while escaped.ends_with('\n') {
+            escaped.pop();
+        }
+        let to_render = if ctx.use_color {
+            escaped
+        } else {
+            strip_ansi(&escaped)
+        };
         frame::wrap_line(&to_render, ctx, w)?;
     }
     Ok(())
@@ -45,10 +53,12 @@ pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> 
 
 fn theme_palette(theme: &Theme) -> (Option<Color>, Color) {
     let bg = theme.settings.background;
-    let default_fg = theme
-        .settings
-        .foreground
-        .unwrap_or(Color { r: 220, g: 220, b: 220, a: 255 });
+    let default_fg = theme.settings.foreground.unwrap_or(Color {
+        r: 220,
+        g: 220,
+        b: 220,
+        a: 255,
+    });
     (bg, default_fg)
 }
 
@@ -60,7 +70,9 @@ fn sanitize_invisible_fg<'a>(
     bg: Option<Color>,
     default_fg: Color,
 ) -> Vec<(Style, &'a str)> {
-    let Some(bg) = bg else { return ranges; };
+    let Some(bg) = bg else {
+        return ranges;
+    };
     ranges
         .into_iter()
         .map(|(mut style, text)| {
@@ -79,11 +91,21 @@ mod tests {
     use crate::env::{ImageBackend, RenderCtx};
 
     fn ctx(use_color: bool) -> RenderCtx {
-        RenderCtx { is_tty: true, use_color, width: 60, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color,
+            width: 60,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     fn ctx_wide(use_color: bool) -> RenderCtx {
-        RenderCtx { is_tty: true, use_color, width: 200, image_backend: ImageBackend::Placeholder }
+        RenderCtx {
+            is_tty: true,
+            use_color,
+            width: 200,
+            image_backend: ImageBackend::Placeholder,
+        }
     }
 
     #[test]
@@ -94,7 +116,7 @@ mod tests {
         assert!(s.contains("x"));
         assert!(s.contains("="));
         assert!(s.contains("1"));
-        assert!(s.contains("\x1b["));  // ANSI from syntect
+        assert!(s.contains("\x1b[")); // ANSI from syntect
     }
 
     #[test]

@@ -1,5 +1,5 @@
-use std::io::{self, Write};
 use base64::Engine;
+use std::io::{self, Write};
 
 use crate::env::RenderCtx;
 use crate::render::image::ImageRenderer;
@@ -9,9 +9,17 @@ pub struct KittyRenderer;
 const CHUNK_SIZE: usize = 4096;
 
 impl ImageRenderer for KittyRenderer {
-    fn render(&self, png_bytes: &[u8], _cell_idx: usize, _out_idx: usize, _ctx: &RenderCtx, w: &mut dyn Write) -> io::Result<()> {
+    fn render(
+        &self,
+        png_bytes: &[u8],
+        _cell_idx: usize,
+        _out_idx: usize,
+        _ctx: &RenderCtx,
+        w: &mut dyn Write,
+    ) -> io::Result<()> {
         let b64 = base64::engine::general_purpose::STANDARD.encode(png_bytes);
-        let chunks: Vec<&str> = b64.as_bytes()
+        let chunks: Vec<&str> = b64
+            .as_bytes()
             .chunks(CHUNK_SIZE)
             .map(|c| std::str::from_utf8(c).unwrap())
             .collect();
@@ -36,7 +44,12 @@ mod tests {
     use crate::render::image::ImageRenderer;
 
     fn ctx() -> RenderCtx {
-        RenderCtx { is_tty: true, use_color: false, width: 60, image_backend: ImageBackend::Kitty }
+        RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width: 60,
+            image_backend: ImageBackend::Kitty,
+        }
     }
 
     #[test]

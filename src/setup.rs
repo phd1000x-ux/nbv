@@ -157,7 +157,10 @@ pub fn run(yes: bool) -> i32 {
     }
 
     println!();
-    println!("Saved to {}. New terminals will pick this up automatically.", rc.display());
+    println!(
+        "Saved to {}. New terminals will pick this up automatically.",
+        rc.display()
+    );
     println!();
     println!("To activate it in THIS terminal right now, run:");
     println!("    {}", line);
@@ -256,15 +259,9 @@ mod tests {
 
     #[test]
     fn path_already_includes_exact_segment() {
-        assert!(path_already_includes(
-            "/foo:/bar:/baz",
-            Path::new("/bar")
-        ));
+        assert!(path_already_includes("/foo:/bar:/baz", Path::new("/bar")));
         assert!(path_already_includes("/bar", Path::new("/bar")));
-        assert!(!path_already_includes(
-            "/foo:/barz:/baz",
-            Path::new("/bar")
-        ));
+        assert!(!path_already_includes("/foo:/barz:/baz", Path::new("/bar")));
         assert!(!path_already_includes("", Path::new("/bar")));
     }
 

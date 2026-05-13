@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 pub struct Notebook {
@@ -91,14 +91,20 @@ pub struct MimeBundle {
 
 impl<'de> Deserialize<'de> for MimeBundle {
     fn deserialize<D>(d: D) -> Result<Self, D::Error>
-    where D: Deserializer<'de> {
+    where
+        D: Deserializer<'de>,
+    {
         let mut raw: HashMap<String, serde_json::Value> = HashMap::deserialize(d)?;
         let text_plain = raw.remove("text/plain").and_then(value_to_string);
         let image_png = raw.remove("image/png").and_then(|v| match v {
             serde_json::Value::String(s) => Some(s),
             _ => None,
         });
-        Ok(MimeBundle { text_plain, image_png, other: raw })
+        Ok(MimeBundle {
+            text_plain,
+            image_png,
+            other: raw,
+        })
     }
 }
 
@@ -108,7 +114,9 @@ fn value_to_string(v: serde_json::Value) -> Option<String> {
         serde_json::Value::Array(arr) => {
             let mut s = String::new();
             for item in arr {
-                if let serde_json::Value::String(x) = item { s.push_str(&x); }
+                if let serde_json::Value::String(x) = item {
+                    s.push_str(&x);
+                }
             }
             Some(s)
         }
@@ -117,7 +125,9 @@ fn value_to_string(v: serde_json::Value) -> Option<String> {
 }
 
 fn string_or_array<'de, D>(d: D) -> Result<String, D::Error>
-where D: Deserializer<'de> {
+where
+    D: Deserializer<'de>,
+{
     use serde::de::Error;
     let v = serde_json::Value::deserialize(d)?;
     value_to_string(v).ok_or_else(|| D::Error::custom("source must be string or array of strings"))
@@ -139,7 +149,11 @@ mod tests {
         let json = r#"{"cells":[{"cell_type":"code","source":"print(1)","outputs":[],"execution_count":1,"metadata":{}}],"metadata":{},"nbformat":4,"nbformat_minor":5}"#;
         let nb: Notebook = serde_json::from_str(json).unwrap();
         match &nb.cells[0] {
-            Cell::Code { source, outputs, execution_count } => {
+            Cell::Code {
+                source,
+                outputs,
+                execution_count,
+            } => {
                 assert_eq!(source, "print(1)");
                 assert!(outputs.is_empty());
                 assert_eq!(*execution_count, Some(1));
@@ -205,7 +219,10 @@ mod tests {
         let nb: Notebook = serde_json::from_str(json).unwrap();
         match &nb.cells[0] {
             Cell::Code { outputs, .. } => match &outputs[0] {
-                Output::ExecuteResult { data, execution_count } => {
+                Output::ExecuteResult {
+                    data,
+                    execution_count,
+                } => {
                     assert_eq!(data.text_plain.as_deref(), Some("42"));
                     assert_eq!(data.image_png.as_deref(), Some("BASE64DATA"));
                     assert!(data.other.contains_key("text/html"));
@@ -242,7 +259,11 @@ mod tests {
         let nb: Notebook = serde_json::from_str(json).unwrap();
         match &nb.cells[0] {
             Cell::Code { outputs, .. } => match &outputs[0] {
-                Output::Error { ename, evalue, traceback } => {
+                Output::Error {
+                    ename,
+                    evalue,
+                    traceback,
+                } => {
                     assert_eq!(ename, "ValueError");
                     assert_eq!(evalue, "bad");
                     assert_eq!(traceback.len(), 2);
