@@ -1,6 +1,16 @@
-# nbv
+<p align="center">
+  <img src="assets/banner.png" alt="nbv — 터미널 네이티브 주피터 노트북 뷰어" width="820">
+</p>
 
-[English](README.md)
+<p align="center">
+  <a href="https://crates.io/crates/nbv"><img src="https://img.shields.io/crates/v/nbv.svg" alt="crates.io"></a>
+  <a href="https://github.com/phd1000x-ux/nbv/releases"><img src="https://img.shields.io/github/v/release/phd1000x-ux/nbv" alt="GitHub release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/crates/l/nbv.svg" alt="MIT License"></a>
+</p>
+
+<p align="center">
+  <a href="README.md">English</a>
+</p>
 
 터미널에서 바로 보는 빠른 주피터 노트북 뷰어.
 

@@ -1,6 +1,16 @@
-# nbv
+<p align="center">
+  <img src="assets/banner.png" alt="nbv — terminal-native Jupyter notebook viewer" width="820">
+</p>
 
-[한국어](README.ko.md)
+<p align="center">
+  <a href="https://crates.io/crates/nbv"><img src="https://img.shields.io/crates/v/nbv.svg" alt="crates.io"></a>
+  <a href="https://github.com/phd1000x-ux/nbv/releases"><img src="https://img.shields.io/github/v/release/phd1000x-ux/nbv" alt="GitHub release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/crates/l/nbv.svg" alt="MIT License"></a>
+</p>
+
+<p align="center">
+  <a href="README.ko.md">한국어</a>
+</p>
 
 A fast terminal-native Jupyter notebook viewer.
 
