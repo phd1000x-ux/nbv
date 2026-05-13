@@ -29,7 +29,7 @@ jobs:
           targets: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
         with:
-          key: musl
+          key: linux-musl-x86_64
       - name: Build
         run: cargo build --release --target x86_64-unknown-linux-musl
       - name: Package
@@ -49,3 +49,4 @@ jobs:
             ${{ steps.pkg.outputs.name }}
             ${{ steps.pkg.outputs.name }}.sha256
           fail_on_unmatched_files: true
+          generate_release_notes: true

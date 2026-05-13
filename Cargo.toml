@@ -6,7 +6,7 @@ description = "A fast terminal-native Jupyter notebook viewer"
 license = "MIT"
 repository = "https://github.com/phd1000x-ux/nbv"
 readme = "README.md"
-exclude = ["/docs", "/tests", "/assets", "/.github"]
+exclude = ["/docs", "/tests", "/assets", "/.github", "/rust-toolchain.toml"]
 
 [[bin]]
 name = "nbv"
