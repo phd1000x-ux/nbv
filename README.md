@@ -50,7 +50,7 @@ cargo install nbv
 **Prebuilt binary (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.2-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.1.3-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
