@@ -3,7 +3,7 @@ use std::io::{self, Write};
 
 use crate::env::RenderCtx;
 use crate::ipynb::model::{MimeBundle, Output, StreamName};
-use crate::render::{frame, image, text, traceback};
+use crate::render::{frame, html_table, image, table, text, traceback};
 use crate::theme;
 
 /// 단일 Output을 박스 안에서 렌더.
@@ -59,7 +59,7 @@ fn render_bundle(
     ctx: &RenderCtx,
     w: &mut impl Write,
 ) -> io::Result<()> {
-    // 우선순위: image/png (백엔드 가능 시) → image/png (placeholder) → text/plain → 기타 placeholder
+    // 우선순위: image/png (백엔드 가능 시) → image/png (placeholder) → text/html (표로 파싱되면) → text/plain → 기타 placeholder
     if let Some(b64) = &bundle.image_png {
         let mime = "image/png";
         let label = match exec_count {
@@ -75,6 +75,20 @@ fn render_bundle(
         frame::close(ctx, w)?;
         return Ok(());
     }
+    // text/html as a table (DataFrames): prefer it over the plain-text repr.
+    if let Some(html) = &bundle.text_html {
+        if let Some(parsed) = html_table::parse(html) {
+            let label = match exec_count {
+                Some(n) => format!("Out [{}] ── text/html", n),
+                None => "Out ── text/html".to_string(),
+            };
+            let label = theme::colorize_output_header(&label, ctx.use_color);
+            frame::open(&label, ctx, w)?;
+            table::render(&parsed, ctx, w)?;
+            frame::close(ctx, w)?;
+            return Ok(());
+        }
+    }
     if let Some(t) = &bundle.text_plain {
         let label = match exec_count {
             Some(n) => format!("Out [{}] ── text/plain", n),
@@ -87,7 +101,7 @@ fn render_bundle(
         return Ok(());
     }
     // 기타 MIME: ipynb 권장 우선순위
-    let priority = ["text/html", "text/latex", "application/json"];
+    let priority = ["text/latex", "application/json"];
     let key = priority
         .iter()
         .find(|p| bundle.other.contains_key(**p))
@@ -216,5 +230,46 @@ mod tests {
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("Error"));
         assert!(s.contains("ValueError") || s.contains("line1"));
+    }
+
+    #[test]
+    fn execute_result_renders_html_table_over_text_plain() {
+        let bundle = MimeBundle {
+            text_plain: Some("PLAIN_REPR".into()),
+            text_html: Some(
+                "<table><thead><tr><th>c</th></tr></thead><tbody><tr><td>v</td></tr></tbody></table>"
+                    .into(),
+            ),
+            image_png: None,
+            other: HashMap::new(),
+        };
+        let out = Output::ExecuteResult {
+            data: bundle,
+            execution_count: Some(1),
+        };
+        let mut buf = Vec::new();
+        render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains('┌'), "should render a table box: {s}");
+        assert!(s.contains("v"));
+        assert!(!s.contains("PLAIN_REPR"), "should prefer html table: {s}");
+    }
+
+    #[test]
+    fn execute_result_unparseable_html_falls_back_to_text_plain() {
+        let bundle = MimeBundle {
+            text_plain: Some("PLAIN_REPR".into()),
+            text_html: Some("<div>not a table</div>".into()),
+            image_png: None,
+            other: HashMap::new(),
+        };
+        let out = Output::ExecuteResult {
+            data: bundle,
+            execution_count: Some(1),
+        };
+        let mut buf = Vec::new();
+        render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("PLAIN_REPR"));
     }
 }
