@@ -1,4 +1,10 @@
+use std::io::{self, Write};
+
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+use crate::env::RenderCtx;
+use crate::render::frame;
+use crate::theme;
 
 /// Per-column text alignment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -175,9 +181,102 @@ fn fit_columns(table: &Table, budget: usize) -> Fit {
     Fit { widths, dropped }
 }
 
+/// Render `table` as a box-drawn grid, emitting each full line through
+/// `frame::wrap_line` so it sits inside the surrounding cell box.
+pub fn render(table: &Table, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+    let budget = ctx.width.saturating_sub(4);
+    let fit = fit_columns(table, budget);
+    if fit.widths.is_empty() {
+        return Ok(());
+    }
+    let kept = fit.widths.len();
+
+    let mut widths = fit.widths;
+    let mut headers: Vec<String> = table.headers[..kept].to_vec();
+    let mut align: Vec<Align> = table.align[..kept].to_vec();
+    if fit.dropped > 0 {
+        let label = format!("+{}", fit.dropped);
+        widths.push(UnicodeWidthStr::width(label.as_str()).max(1));
+        headers.push(label);
+        align.push(Align::Left);
+    }
+
+    border_line(&widths, '┌', '┬', '┐', ctx, w)?;
+
+    let header_cells: Vec<String> = headers
+        .iter()
+        .enumerate()
+        .map(|(i, h)| pad_cell(&truncate_cell(h, widths[i]), widths[i], align[i]))
+        .collect();
+    data_line(&header_cells, ctx.use_color, ctx, w)?;
+
+    border_line(&widths, '├', '┼', '┤', ctx, w)?;
+
+    for row in &table.rows {
+        let mut cells: Vec<String> = (0..kept)
+            .map(|i| pad_cell(&truncate_cell(&row[i], widths[i]), widths[i], align[i]))
+            .collect();
+        if fit.dropped > 0 {
+            cells.push(pad_cell("…", widths[kept], Align::Left));
+        }
+        data_line(&cells, false, ctx, w)?;
+    }
+
+    border_line(&widths, '└', '┴', '┘', ctx, w)?;
+    Ok(())
+}
+
+/// Emit a horizontal border line, e.g. `┌───┬───┐`, through `frame::wrap_line`.
+fn border_line(
+    widths: &[usize],
+    left: char,
+    mid: char,
+    right: char,
+    ctx: &RenderCtx,
+    w: &mut impl Write,
+) -> io::Result<()> {
+    let mut line = String::new();
+    line.push(left);
+    for (i, width) in widths.iter().enumerate() {
+        line.push_str(&"─".repeat(width + 2));
+        line.push(if i + 1 == widths.len() { right } else { mid });
+    }
+    frame::wrap_line(&line, ctx, w)
+}
+
+/// Emit a content row, e.g. `│ a │ b │`, through `frame::wrap_line`.
+/// When `bold` is true each cell is wrapped in BOLD/RESET (the header row).
+fn data_line(cells: &[String], bold: bool, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+    let mut line = String::new();
+    line.push('│');
+    for cell in cells {
+        line.push(' ');
+        if bold {
+            line.push_str(theme::BOLD);
+            line.push_str(cell);
+            line.push_str(theme::RESET);
+        } else {
+            line.push_str(cell);
+        }
+        line.push_str(" │");
+    }
+    frame::wrap_line(&line, ctx, w)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::env::{ImageBackend, RenderCtx};
+
+    fn ctx(width: usize) -> RenderCtx {
+        RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width,
+            image_backend: ImageBackend::Placeholder,
+        }
+    }
 
     #[test]
     fn new_pads_short_rows_and_truncates_long_rows() {
@@ -266,5 +365,41 @@ mod tests {
             fit.widths,
             indicator_w
         );
+    }
+
+    #[test]
+    fn render_draws_grid_with_headers_and_rows() {
+        let t = Table::new(
+            vec!["name".into(), "age".into()],
+            vec![
+                vec!["Alice".into(), "30".into()],
+                vec!["Bob".into(), "25".into()],
+            ],
+            vec![Align::Left, Align::Right],
+        );
+        let mut buf = Vec::new();
+        render(&t, &ctx(40), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        // box-drawing grid
+        assert!(s.contains('┌') && s.contains('┬') && s.contains('┐'));
+        assert!(s.contains('├') && s.contains('┼') && s.contains('┤'));
+        assert!(s.contains('└') && s.contains('┴') && s.contains('┘'));
+        // header and cell values
+        assert!(s.contains("name") && s.contains("age"));
+        assert!(s.contains("Alice") && s.contains("Bob"));
+        // every emitted line is exactly ctx.width wide (frame::wrap_line pads)
+        for line in s.lines() {
+            assert_eq!(line.chars().count(), 40, "line not full width: {line:?}");
+        }
+    }
+
+    #[test]
+    fn render_header_only_table_emits_no_body_rows() {
+        let t = Table::new(vec!["a".into(), "b".into()], vec![], vec![Align::Left; 2]);
+        let mut buf = Vec::new();
+        render(&t, &ctx(30), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        // top border, header, separator, bottom border = 4 lines
+        assert_eq!(s.lines().count(), 4);
     }
 }
