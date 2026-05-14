@@ -3,6 +3,7 @@ pub mod frame;
 pub mod image;
 pub mod markdown;
 pub mod output;
+pub mod table;
 pub mod text;
 pub mod traceback;
 
