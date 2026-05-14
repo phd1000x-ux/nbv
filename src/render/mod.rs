@@ -1,5 +1,6 @@
 pub mod code;
 pub mod frame;
+pub mod html_table;
 pub mod image;
 pub mod markdown;
 pub mod output;
