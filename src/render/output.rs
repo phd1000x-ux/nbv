@@ -148,6 +148,7 @@ mod tests {
         let png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
         let bundle = MimeBundle {
             text_plain: Some("ignored".into()),
+            text_html: None,
             image_png: Some(png_b64.into()),
             other: HashMap::new(),
         };
@@ -166,6 +167,7 @@ mod tests {
     fn execute_result_falls_back_to_text_plain() {
         let bundle = MimeBundle {
             text_plain: Some("42".into()),
+            text_html: None,
             image_png: None,
             other: HashMap::new(),
         };
@@ -183,11 +185,12 @@ mod tests {
     fn execute_result_unknown_mime_shows_placeholder() {
         let mut other = HashMap::new();
         other.insert(
-            "text/html".to_string(),
-            serde_json::Value::String("<table/>".into()),
+            "application/json".to_string(),
+            serde_json::Value::String("{}".into()),
         );
         let bundle = MimeBundle {
             text_plain: None,
+            text_html: None,
             image_png: None,
             other,
         };
@@ -198,7 +201,7 @@ mod tests {
         let mut buf = Vec::new();
         render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(s.contains("unsupported") || s.contains("text/html"));
+        assert!(s.contains("unsupported") || s.contains("application/json"));
     }
 
     #[test]
