@@ -194,3 +194,19 @@ fn width_flag_forces_output_columns() {
         );
     }
 }
+
+#[test]
+fn theme_flag_accepted_end_to_end() {
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "--theme",
+        "InspiredGitHub",
+        "tests/fixtures/simple.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(
+        out.contains("x = 1 + 2"),
+        "code content should still render under --theme"
+    );
+}

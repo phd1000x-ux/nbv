@@ -27,7 +27,7 @@ pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> 
         .find_syntax_by_token(lang)
         .or_else(|| ss.find_syntax_by_token("python"))
         .unwrap_or_else(|| ss.find_syntax_plain_text());
-    let theme = &ts.themes["base16-ocean.dark"];
+    let theme = &ts.themes[&ctx.code_theme];
     let mut hl = HighlightLines::new(syntax, theme);
     let (bg, default_fg) = theme_palette(theme);
 
@@ -128,6 +128,25 @@ mod tests {
         let s = String::from_utf8(buf).unwrap();
         assert!(!s.contains("\x1b["));
         assert!(s.contains("x"));
+    }
+
+    #[test]
+    fn theme_change_produces_different_output() {
+        // Render the same Python source with two different themes; the resulting
+        // ANSI escape sequences must differ.
+        let mut default_ctx = ctx_wide(true);
+        default_ctx.code_theme = "base16-ocean.dark".into();
+        let mut alt_ctx = ctx_wide(true);
+        alt_ctx.code_theme = "InspiredGitHub".into();
+
+        let mut default_buf = Vec::new();
+        render("x = 1", "python", &default_ctx, &mut default_buf).unwrap();
+        let mut alt_buf = Vec::new();
+        render("x = 1", "python", &alt_ctx, &mut alt_buf).unwrap();
+
+        assert!(default_buf.contains(&b'x'));
+        assert!(alt_buf.contains(&b'x'));
+        assert_ne!(default_buf, alt_buf, "theme change must alter ANSI output");
     }
 
     #[test]
