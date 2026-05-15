@@ -61,14 +61,14 @@ cargo install nbv
 **Prebuilt binary (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.3.1-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.0-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
 **Prebuilt binary (Linux x86_64, static musl):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.3.1-x86_64-unknown-linux-musl.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.0-x86_64-unknown-linux-musl.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
@@ -107,7 +107,7 @@ That is the full surface. Anything not on a flag is auto-detected from the envir
 
 ## What gets rendered
 
-| ipynb element | v0.3 behavior |
+| ipynb element | v0.4 behavior |
 | --- | --- |
 | Markdown cells | Headers (H1–H6), lists, blockquotes, inline code, fenced code blocks (highlighted via syntect), bold/italic, link text, GFM tables |
 | Code cells | Syntect highlighting using the notebook's kernel language (defaults to Python) |
@@ -118,7 +118,7 @@ That is the full surface. Anything not on a flag is auto-detected from the envir
 | Stream `stdout`/`stderr` | Plain text inside its own cell box, labeled |
 | Unknown cell or output type | Skipped with a `(skipped)` placeholder and a one-line stderr warning; rendering continues |
 
-Not yet in v0.3: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
+Not yet in v0.4: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
 
 ## Terminal support
 
