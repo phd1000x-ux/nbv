@@ -7,6 +7,12 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
+    # pulldown-cmark is 0.x — minor bumps are breaking; only auto-PR patch updates.
+    ignore:
+      - dependency-name: "pulldown-cmark"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
 
   - package-ecosystem: "github-actions"
     directory: "/"
