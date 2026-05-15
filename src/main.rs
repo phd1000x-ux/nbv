@@ -17,6 +17,16 @@ fn main() -> ExitCode {
         return ExitCode::from(setup::run(yes) as u8);
     }
 
+    if args.list_themes {
+        let ts = syntect::highlighting::ThemeSet::load_defaults();
+        let mut names: Vec<&String> = ts.themes.keys().collect();
+        names.sort();
+        for n in names {
+            println!("{}", n);
+        }
+        return ExitCode::SUCCESS;
+    }
+
     if let Some(name) = &args.theme {
         let ts = syntect::highlighting::ThemeSet::load_defaults();
         if !ts.themes.contains_key(name) {

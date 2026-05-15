@@ -95,6 +95,7 @@ nbv analysis.ipynb                          # render to stdout
 nbv --no-color analysis.ipynb               # disable ANSI colors
 nbv --no-images analysis.ipynb              # force image placeholders
 nbv --theme InspiredGitHub analysis.ipynb   # use a different syntect theme for code blocks
+nbv --list-themes                           # print available syntect theme names
 nbv --width 120 analysis.ipynb              # force output width (min 20; default: auto-detect)
 NBV_THEME=InspiredGitHub nbv analysis.ipynb # env-var fallback for --theme (flag wins when both)
 NBV_WIDTH=120 nbv analysis.ipynb            # env-var fallback for --width

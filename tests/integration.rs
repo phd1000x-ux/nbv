@@ -293,6 +293,26 @@ fn env_width_forces_output_columns() {
 }
 
 #[test]
+fn list_themes_prints_known_names_and_exits_zero() {
+    let (out, _err, code) = run(&["--list-themes"]);
+    assert_eq!(code, 0, "--list-themes should exit 0, got {code}");
+    assert!(
+        out.contains("base16-ocean.dark"),
+        "default theme missing from list: {out}"
+    );
+    assert!(
+        out.contains("InspiredGitHub"),
+        "InspiredGitHub missing from list: {out}"
+    );
+    let lines: Vec<&str> = out.lines().filter(|l| !l.is_empty()).collect();
+    assert!(
+        lines.len() >= 5,
+        "expected at least 5 themes, got {}: {out}",
+        lines.len()
+    );
+}
+
+#[test]
 fn env_width_below_minimum_rejected() {
     let (_out, err, code) = run_with_env(&[("NBV_WIDTH", "5")], &["tests/fixtures/simple.ipynb"]);
     assert_eq!(

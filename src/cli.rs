@@ -29,6 +29,10 @@ pub struct Args {
     /// Force output width to N columns, min 20 (default: auto-detect)
     #[arg(long, env = "NBV_WIDTH", value_name = "N", value_parser = clap::value_parser!(u16).range(20..))]
     pub width: Option<u16>,
+
+    /// Print available syntect theme names and exit
+    #[arg(long)]
+    pub list_themes: bool,
 }
 
 #[derive(Debug, Subcommand)]
