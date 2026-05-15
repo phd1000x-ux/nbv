@@ -21,6 +21,14 @@ pub struct Args {
     /// Disable inline image rendering (use placeholder)
     #[arg(long)]
     pub no_images: bool,
+
+    /// Syntect theme for code blocks (default: base16-ocean.dark)
+    #[arg(long, value_name = "NAME")]
+    pub theme: Option<String>,
+
+    /// Force output width to N columns, min 20 (default: auto-detect)
+    #[arg(long, value_name = "N", value_parser = clap::value_parser!(u16).range(20..))]
+    pub width: Option<u16>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -79,5 +87,36 @@ mod tests {
             Some(Command::Setup { yes }) => assert!(yes),
             _ => panic!("expected Setup"),
         }
+    }
+
+    #[test]
+    fn parses_theme_flag() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--theme", "InspiredGitHub"]).unwrap();
+        assert_eq!(a.theme.as_deref(), Some("InspiredGitHub"));
+    }
+
+    #[test]
+    fn parses_width_flag() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--width", "120"]).unwrap();
+        assert_eq!(a.width, Some(120));
+    }
+
+    #[test]
+    fn theme_and_width_default_to_none() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb"]).unwrap();
+        assert!(a.theme.is_none());
+        assert!(a.width.is_none());
+    }
+
+    #[test]
+    fn width_below_minimum_is_rejected() {
+        // clap range validator rejects --width 5
+        let r = Args::try_parse_from(["nbv", "x.ipynb", "--width", "5"]);
+        assert!(r.is_err());
+        let msg = r.unwrap_err().to_string();
+        assert!(
+            msg.contains("5") && (msg.contains("not in") || msg.contains("range")),
+            "got: {msg}"
+        );
     }
 }
