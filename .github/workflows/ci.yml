@@ -23,6 +23,9 @@ jobs:
         with:
           components: rustfmt, clippy
           cache: false
+      - name: Ensure rustup cargo on PATH (macOS flake guard)
+        if: runner.os == 'macOS'
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt
         run: cargo fmt --all -- --check
