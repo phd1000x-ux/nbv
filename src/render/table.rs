@@ -241,14 +241,26 @@ fn border_line(
         line.push_str(&"─".repeat(width + 2));
         line.push(if i + 1 == widths.len() { right } else { mid });
     }
+    // DIM the whole border line (it is pure box-drawing characters).
+    let line = if ctx.use_color {
+        format!("{}{}{}", theme::DIM, line, theme::RESET)
+    } else {
+        line
+    };
     frame::wrap_line(&line, ctx, w)
 }
 
 /// Emit a content row, e.g. `│ a │ b │`, through `frame::wrap_line`.
 /// When `bold` is true each cell is wrapped in BOLD/RESET (the header row).
 fn data_line(cells: &[String], bold: bool, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+    // DIM the `│` separators; cell content stays at its own intensity.
+    let bar = if ctx.use_color {
+        format!("{}│{}", theme::DIM, theme::RESET)
+    } else {
+        "│".to_string()
+    };
     let mut line = String::new();
-    line.push('│');
+    line.push_str(&bar);
     for cell in cells {
         line.push(' ');
         if bold {
@@ -258,7 +270,8 @@ fn data_line(cells: &[String], bold: bool, ctx: &RenderCtx, w: &mut impl Write) 
         } else {
             line.push_str(cell);
         }
-        line.push_str(" │");
+        line.push(' ');
+        line.push_str(&bar);
     }
     frame::wrap_line(&line, ctx, w)
 }

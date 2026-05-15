@@ -32,17 +32,37 @@ fn ansi_width(s: &str) -> usize {
 }
 
 /// 상단 박스 라인: `┌─ {label} ─...─┐`
-pub fn open(label: &str, _ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+pub fn open(label: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     let label_str = format!(" {} ", label);
     let label_w = ansi_width(&label_str);
-    let inner_w = _ctx.width.saturating_sub(2);
+    let inner_w = ctx.width.saturating_sub(2);
     let dashes = inner_w.saturating_sub(label_w + 1);
-    writeln!(w, "┌─{}{}┐", label_str, "─".repeat(dashes))
+    let dashes_str = "─".repeat(dashes);
+    if ctx.use_color {
+        // DIM the box-drawing chars (┌─...─┐); keep the label at its own colors.
+        writeln!(
+            w,
+            "{}┌─{}{}{}{}┐{}",
+            theme::DIM,
+            theme::RESET,
+            label_str,
+            theme::DIM,
+            dashes_str,
+            theme::RESET
+        )
+    } else {
+        writeln!(w, "┌─{}{}┐", label_str, dashes_str)
+    }
 }
 
 pub fn close(ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     let inner_w = ctx.width.saturating_sub(2);
-    writeln!(w, "└{}┘", "─".repeat(inner_w))
+    let body = format!("└{}┘", "─".repeat(inner_w));
+    if ctx.use_color {
+        writeln!(w, "{}{}{}", theme::DIM, body, theme::RESET)
+    } else {
+        writeln!(w, "{}", body)
+    }
 }
 
 /// 박스 내부 한 줄: `│ {content padded} │`.
@@ -94,8 +114,20 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
         trimmed.push_str(theme::RESET);
     }
     let pad = inner_w - used;
-    let _ = ctx; // 박스선은 색 없이 그리므로 ctx는 inner_w 계산 외엔 사용 안 함
-    writeln!(w, "│ {}{} │", trimmed, " ".repeat(pad))
+    if ctx.use_color {
+        writeln!(
+            w,
+            "{}│{} {}{} {}│{}",
+            theme::DIM,
+            theme::RESET,
+            trimmed,
+            " ".repeat(pad),
+            theme::DIM,
+            theme::RESET
+        )
+    } else {
+        writeln!(w, "│ {}{} │", trimmed, " ".repeat(pad))
+    }
 }
 
 #[cfg(test)]
