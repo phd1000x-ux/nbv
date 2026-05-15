@@ -159,3 +159,38 @@ fn tables_notebook_renders_gfm_and_dataframe() {
         "box-drawing grid missing:\n{out}"
     );
 }
+
+#[test]
+fn invalid_theme_exits_with_helpful_error() {
+    let (_out, err, code) = run(&["--theme", "not-a-real-theme", "tests/fixtures/simple.ipynb"]);
+    assert_eq!(code, 2, "expected exit 2 on invalid theme, got {code}");
+    assert!(
+        err.contains("unknown theme"),
+        "stderr should explain the error: {err}"
+    );
+    assert!(
+        err.contains("base16-ocean.dark"),
+        "stderr should list available themes (including default): {err}"
+    );
+}
+
+#[test]
+fn width_flag_forces_output_columns() {
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "--width",
+        "120",
+        "tests/fixtures/simple.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    // Every emitted line should be exactly 120 chars (frame::wrap_line pads to width).
+    for line in out.lines() {
+        assert_eq!(
+            line.chars().count(),
+            120,
+            "expected 120-col line, got {} cols: {line:?}",
+            line.chars().count()
+        );
+    }
+}

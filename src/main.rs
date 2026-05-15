@@ -17,6 +17,19 @@ fn main() -> ExitCode {
         return ExitCode::from(setup::run(yes) as u8);
     }
 
+    if let Some(name) = &args.theme {
+        let ts = syntect::highlighting::ThemeSet::load_defaults();
+        if !ts.themes.contains_key(name) {
+            eprintln!("nbv: unknown theme '{}'. Available themes:", name);
+            let mut names: Vec<&String> = ts.themes.keys().collect();
+            names.sort();
+            for n in names {
+                eprintln!("  {}", n);
+            }
+            return ExitCode::from(2);
+        }
+    }
+
     let file = match args.file {
         Some(f) => f,
         None => {
@@ -45,7 +58,12 @@ fn main() -> ExitCode {
         Ok(Ok(nb)) => nb,
     };
 
-    let ctx = env::detect(args.no_color, args.no_images, None, None);
+    let ctx = env::detect(
+        args.no_color,
+        args.no_images,
+        args.theme.clone(),
+        args.width.map(|w| w as usize),
+    );
 
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());
