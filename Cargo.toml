@@ -22,7 +22,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 syntect = { version = "5.3", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html", "yaml-load", "dump-load", "dump-create", "regex-fancy"] }
 pulldown-cmark = { version = "0.10", default-features = false }
-crossterm = "0.27"
+crossterm = "0.29"
 base64 = "0.22"
 unicode-width = "0.1"
 signal-hook = "0.3"
