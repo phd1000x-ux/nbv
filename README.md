@@ -91,11 +91,13 @@ If `cargo install` warns that `~/.cargo/bin` is not on your `PATH`, run:
 ## Usage
 
 ```bash
-nbv analysis.ipynb               # render to stdout
-nbv --no-color analysis.ipynb    # disable ANSI colors
-nbv --no-images analysis.ipynb   # force image placeholders
-nbv -h                           # help
-nbv -V                           # version
+nbv analysis.ipynb                          # render to stdout
+nbv --no-color analysis.ipynb               # disable ANSI colors
+nbv --no-images analysis.ipynb              # force image placeholders
+nbv --theme InspiredGitHub analysis.ipynb   # use a different syntect theme for code blocks
+nbv --width 120 analysis.ipynb              # force output width (min 20; default: auto-detect)
+nbv -h                                      # help
+nbv -V                                      # version
 ```
 
 That is the full surface. Anything not on a flag is auto-detected from the environment.

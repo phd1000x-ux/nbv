@@ -91,11 +91,13 @@ cargo install --path .
 ## 사용법
 
 ```bash
-nbv analysis.ipynb               # stdout으로 렌더링
-nbv --no-color analysis.ipynb    # ANSI 색 끄기
-nbv --no-images analysis.ipynb   # 이미지 강제 placeholder
-nbv -h                           # 도움말
-nbv -V                           # 버전
+nbv analysis.ipynb                          # stdout으로 렌더링
+nbv --no-color analysis.ipynb               # ANSI 색 끄기
+nbv --no-images analysis.ipynb              # 이미지 강제 placeholder
+nbv --theme InspiredGitHub analysis.ipynb   # 코드 블록의 syntect 테마 변경
+nbv --width 120 analysis.ipynb              # 출력 폭 강제 (최소 20; 기본: 자동 감지)
+nbv -h                                      # 도움말
+nbv -V                                      # 버전
 ```
 
 이게 전부. 플래그에 없는 동작은 모두 환경에서 자동 감지된다.
