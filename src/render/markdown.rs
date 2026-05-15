@@ -1,8 +1,9 @@
 use std::io::{self, Write};
 
-use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
+use pulldown_cmark::{Alignment, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
 use crate::env::RenderCtx;
+use crate::render::table::{self, Align, Table};
 use crate::render::{code, frame};
 use crate::theme;
 
@@ -14,8 +15,9 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
     let mut in_blockquote = 0u32;
     let mut pending_code_block: Option<String> = None;
     let mut pending_lang: Option<String> = None;
+    let mut table: Option<TableBuilder> = None;
 
-    let parser = Parser::new(source);
+    let parser = Parser::new_ext(source, Options::ENABLE_TABLES);
 
     for ev in parser {
         match ev {
@@ -42,38 +44,42 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
             }
             Event::Start(Tag::Emphasis) => {
-                if ctx.use_color {
+                if ctx.use_color && !in_table_cell(&table) {
                     acc.push_str(theme::ITALIC);
                 }
                 _style.italic = true;
             }
             Event::End(TagEnd::Emphasis) => {
-                if ctx.use_color {
+                if ctx.use_color && !in_table_cell(&table) {
                     acc.push_str(theme::RESET);
                 }
                 _style.italic = false;
             }
             Event::Start(Tag::Strong) => {
-                if ctx.use_color {
+                if ctx.use_color && !in_table_cell(&table) {
                     acc.push_str(theme::BOLD);
                 }
                 _style.bold = true;
             }
             Event::End(TagEnd::Strong) => {
-                if ctx.use_color {
+                if ctx.use_color && !in_table_cell(&table) {
                     acc.push_str(theme::RESET);
                 }
                 _style.bold = false;
             }
             Event::Code(c) => {
-                if ctx.use_color {
-                    acc.push_str(theme::FG_YELLOW);
-                }
-                acc.push('`');
-                acc.push_str(&c);
-                acc.push('`');
-                if ctx.use_color {
-                    acc.push_str(theme::RESET);
+                if let Some(cell) = table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
+                    cell.push_str(&c);
+                } else {
+                    if ctx.use_color {
+                        acc.push_str(theme::FG_YELLOW);
+                    }
+                    acc.push('`');
+                    acc.push_str(&c);
+                    acc.push('`');
+                    if ctx.use_color {
+                        acc.push_str(theme::RESET);
+                    }
                 }
             }
             Event::Start(Tag::CodeBlock(kind)) => {
@@ -131,15 +137,65 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 acc.push(']');
             }
             Event::Text(t) => {
-                acc.push_str(&t);
+                if let Some(cell) = table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
+                    cell.push_str(&t);
+                } else {
+                    acc.push_str(&t);
+                }
             }
             Event::SoftBreak | Event::HardBreak => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                if let Some(cell) = table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
+                    cell.push(' ');
+                } else {
+                    flush_line(&mut acc, in_blockquote, ctx, w)?;
+                }
             }
             Event::Rule => {
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
                 let dashes = "─".repeat(ctx.width.saturating_sub(4));
                 frame::wrap_line(&dashes, ctx, w)?;
+            }
+            Event::Start(Tag::Table(aligns)) => {
+                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                table = Some(TableBuilder {
+                    align: aligns.iter().map(map_align).collect(),
+                    headers: Vec::new(),
+                    rows: Vec::new(),
+                    cur_row: Vec::new(),
+                    cur_cell: None,
+                });
+            }
+            Event::Start(Tag::TableHead) | Event::Start(Tag::TableRow) => {
+                if let Some(t) = table.as_mut() {
+                    t.cur_row = Vec::new();
+                }
+            }
+            Event::End(TagEnd::TableHead) => {
+                if let Some(t) = table.as_mut() {
+                    t.headers = std::mem::take(&mut t.cur_row);
+                }
+            }
+            Event::End(TagEnd::TableRow) => {
+                if let Some(t) = table.as_mut() {
+                    let row = std::mem::take(&mut t.cur_row);
+                    t.rows.push(row);
+                }
+            }
+            Event::Start(Tag::TableCell) => {
+                if let Some(t) = table.as_mut() {
+                    t.cur_cell = Some(String::new());
+                }
+            }
+            Event::End(TagEnd::TableCell) => {
+                if let Some(t) = table.as_mut() {
+                    let cell = t.cur_cell.take().unwrap_or_default();
+                    t.cur_row.push(cell.trim().to_string());
+                }
+            }
+            Event::End(TagEnd::Table) => {
+                if let Some(t) = table.take() {
+                    table::render(&t.into_table(), ctx, w)?;
+                }
             }
             _ => {}
         }
@@ -188,6 +244,34 @@ struct Style {
 
 struct ListState {
     number: Option<u64>,
+}
+
+/// Accumulates pulldown-cmark table events into a `Table`.
+struct TableBuilder {
+    align: Vec<Align>,
+    headers: Vec<String>,
+    rows: Vec<Vec<String>>,
+    cur_row: Vec<String>,
+    cur_cell: Option<String>,
+}
+
+impl TableBuilder {
+    fn into_table(self) -> Table {
+        Table::new(self.headers, self.rows, self.align)
+    }
+}
+
+fn map_align(a: &Alignment) -> Align {
+    match a {
+        Alignment::Right => Align::Right,
+        Alignment::Center => Align::Center,
+        Alignment::None | Alignment::Left => Align::Left,
+    }
+}
+
+/// True while events are being routed into a table cell's text buffer.
+fn in_table_cell(table: &Option<TableBuilder>) -> bool {
+    table.as_ref().is_some_and(|t| t.cur_cell.is_some())
 }
 
 #[cfg(test)]
@@ -275,5 +359,31 @@ mod tests {
         render("**bold**", &ctx(true), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("\x1b[1m") || s.contains("bold"));
+    }
+
+    #[test]
+    fn gfm_table_renders_as_box() {
+        let mut buf = Vec::new();
+        render(
+            "| Name | Age |\n|:-----|----:|\n| Alice | 30 |\n| Bob | 25 |",
+            &ctx(false),
+            &mut buf,
+        )
+        .unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains('┌') && s.contains('┬') && s.contains('┐'), "{s}");
+        assert!(s.contains('├') && s.contains('┼') && s.contains('┤'), "{s}");
+        assert!(s.contains("Name") && s.contains("Age"));
+        assert!(s.contains("Alice") && s.contains("Bob"));
+        assert!(s.contains("30") && s.contains("25"));
+    }
+
+    #[test]
+    fn gfm_table_ragged_row_does_not_panic() {
+        let mut buf = Vec::new();
+        // body row has fewer cells than the header
+        render("| A | B |\n|---|---|\n| x |", &ctx(false), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("x"));
     }
 }

@@ -42,6 +42,7 @@ Ghostty나 iTerm2에서는 matplotlib/seaborn으로 만든 PNG 출력이 셀 안
 - **자동 감지.** TTY 여부, 터미널 종류, 컬러 지원 여부 — 환경변수 설정 없이 그냥 동작한다.
 - **파이프 안전.** non-TTY 감지해서 우아하게 폴백. `nbv x.ipynb | less -R` 그대로 됨. `| head`로 끊겨도 `SIGPIPE`를 잡아서 exit 0.
 - **시각적 마감.** Unicode box-drawing으로 그린 셀 경계, `syntect` 기반 코드 하이라이팅, 마크다운 헤더/리스트 정렬, 커널이 준 ANSI 색이 살아있는 traceback.
+- **표 렌더링.** 마크다운 셀의 GFM 파이프 표와 pandas DataFrame `text/html` 출력을 컬럼 정렬이 살아있는 box-drawing 표로 렌더링.
 
 ## 설치
 
@@ -101,18 +102,18 @@ nbv -V                           # 버전
 
 ## 무엇을 어떻게 렌더링하나
 
-| ipynb 요소 | v0.2 동작 |
+| ipynb 요소 | v0.3 동작 |
 | --- | --- |
-| 마크다운 셀 | 헤더(H1~H6), 리스트, 블록인용, 인라인 코드, 코드 펜스(syntect로 하이라이팅), 굵게/기울임, 링크 텍스트 |
+| 마크다운 셀 | 헤더(H1~H6), 리스트, 블록인용, 인라인 코드, 코드 펜스(syntect로 하이라이팅), 굵게/기울임, 링크 텍스트, GFM 표 |
 | 코드 셀 | 커널 언어로 syntect 하이라이팅 (기본 Python) |
 | `text/plain` 출력 | 박스 안 평문 |
 | `image/png` 출력 | Ghostty/iTerm2 인라인 (네이티브 프로토콜), 그 외 placeholder 박스 (`🖼 PNG W×H`) |
-| `text/html` (DataFrame) | 커널이 같이 넣어주는 `text/plain` 표현으로 폴백 — pandas는 항상 둘 다 emit |
+| `text/html` (DataFrame) | box-drawing 표로 렌더링; 표로 파싱되지 않으면 커널의 `text/plain` 표현으로 폴백 |
 | 에러 / traceback | TTY/색 지원 시 커널 ANSI 색 보존, `--no-color`면 strip |
 | `stdout`/`stderr` 스트림 | 라벨 붙은 박스 안에 평문 |
 | 알 수 없는 셀/출력 타입 | `(skipped)` placeholder + stderr 경고 한 줄, 렌더링 계속 진행 |
 
-v0.2 미지원: 마크다운 표, 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
+v0.3 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
 
 ## 터미널 지원
 

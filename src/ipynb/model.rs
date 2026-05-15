@@ -85,6 +85,7 @@ pub enum StreamName {
 #[derive(Debug, Default)]
 pub struct MimeBundle {
     pub text_plain: Option<String>,
+    pub text_html: Option<String>,
     pub image_png: Option<String>,
     pub other: HashMap<String, serde_json::Value>,
 }
@@ -96,12 +97,14 @@ impl<'de> Deserialize<'de> for MimeBundle {
     {
         let mut raw: HashMap<String, serde_json::Value> = HashMap::deserialize(d)?;
         let text_plain = raw.remove("text/plain").and_then(value_to_string);
+        let text_html = raw.remove("text/html").and_then(value_to_string);
         let image_png = raw.remove("image/png").and_then(|v| match v {
             serde_json::Value::String(s) => Some(s),
             _ => None,
         });
         Ok(MimeBundle {
             text_plain,
+            text_html,
             image_png,
             other: raw,
         })
@@ -225,7 +228,7 @@ mod tests {
                 } => {
                     assert_eq!(data.text_plain.as_deref(), Some("42"));
                     assert_eq!(data.image_png.as_deref(), Some("BASE64DATA"));
-                    assert!(data.other.contains_key("text/html"));
+                    assert_eq!(data.text_html.as_deref(), Some("<table/>"));
                     assert_eq!(*execution_count, Some(2));
                 }
                 _ => panic!(),

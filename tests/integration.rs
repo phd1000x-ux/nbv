@@ -134,3 +134,28 @@ fn large_notebook_renders_in_reasonable_time() {
         dur
     );
 }
+
+#[test]
+fn tables_notebook_renders_gfm_and_dataframe() {
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "tests/fixtures/with_tables.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    // GFM table from the markdown cell
+    assert!(out.contains("Alice"), "GFM cell value missing:\n{out}");
+    assert!(out.contains("Bob"), "GFM cell value Bob missing:\n{out}");
+    // DataFrame rendered from text/html, not the plain repr
+    assert!(out.contains("city"), "DataFrame header missing:\n{out}");
+    assert!(out.contains("NYC"), "DataFrame cell NYC missing:\n{out}");
+    assert!(
+        !out.contains("0  NYC   80"),
+        "should render the html table, not the raw text/plain repr:\n{out}"
+    );
+    // box-drawing grid present
+    assert!(
+        out.contains('┬') && out.contains('┼') && out.contains('┴'),
+        "box-drawing grid missing:\n{out}"
+    );
+}
