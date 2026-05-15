@@ -27,6 +27,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
+      # rust-toolchain.toml pins 1.95.0 and overrides @stable inside the repo;
+      # this installs the musl target onto the toolchain that actually gets used.
+      - name: Install musl target on pinned toolchain
+        run: rustup target add x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
         with:
           key: linux-musl-x86_64
