@@ -141,6 +141,7 @@ mod tests {
             use_color: false,
             width,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         }
     }
 
@@ -208,6 +209,7 @@ mod tests {
             use_color: true,
             width: 30,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         };
         let label = theme::colorize_code_header("In [1] code (python)", true);
         open(&label, &ctx, &mut buf).unwrap();
@@ -230,6 +232,7 @@ mod tests {
             use_color: true,
             width: 30,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         };
         let content = format!("{}red{}", theme::FG_RED, theme::RESET);
         wrap_line(&content, &ctx, &mut buf).unwrap();
@@ -251,6 +254,7 @@ mod tests {
             use_color: true,
             width: 12,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         };
         // inner_w = 8. 9자보다 길게 보내야 truncation.
         let content = format!("{}abcdefghijklmnop", theme::FG_RED);
@@ -273,6 +277,7 @@ mod tests {
             use_color: false,
             width: 40,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         };
         // "hello"(5) + \t → 다음 stop=8 → 3 spaces, 그 후 "world"(5)
         wrap_line("hello\tworld", &ctx, &mut buf).unwrap();
@@ -293,6 +298,7 @@ mod tests {
             use_color: false,
             width: 60,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         };
         // 9 chars + \t → next stop = 16 → 7 spaces
         wrap_line("123456789\tnext", &ctx, &mut buf).unwrap();
@@ -313,6 +319,7 @@ mod tests {
             use_color: false,
             width: 30,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         };
         // text::render가 `\n`은 떼고 보내지만 `\r`은 남아 들어옴
         wrap_line("hello\r", &ctx, &mut buf).unwrap();
@@ -334,6 +341,7 @@ mod tests {
             use_color: true,
             width: 30,
             image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
         };
         let content = "\x1b[38;2;192;197;206mx\x1b[0m \x1b[38;2;192;197;206m=\x1b[0m \x1b[38;2;192;197;206m1\x1b[0m";
         wrap_line(content, &ctx, &mut buf).unwrap();

@@ -45,7 +45,7 @@ fn main() -> ExitCode {
         Ok(Ok(nb)) => nb,
     };
 
-    let ctx = env::detect(args.no_color, args.no_images);
+    let ctx = env::detect(args.no_color, args.no_images, None, None);
 
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());

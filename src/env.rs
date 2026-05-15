@@ -11,6 +11,7 @@ pub struct RenderCtx {
     pub use_color: bool,
     pub width: usize,
     pub image_backend: ImageBackend,
+    pub code_theme: String,
 }
 
 pub trait EnvProbe {
@@ -70,14 +71,31 @@ impl EnvProbe for TestEnv {
     }
 }
 
-pub fn detect(args_no_color: bool, args_no_images: bool) -> RenderCtx {
-    detect_with(&SystemEnv, args_no_color, args_no_images)
+pub fn detect(
+    args_no_color: bool,
+    args_no_images: bool,
+    args_theme: Option<String>,
+    args_width: Option<usize>,
+) -> RenderCtx {
+    detect_with(
+        &SystemEnv,
+        args_no_color,
+        args_no_images,
+        args_theme,
+        args_width,
+    )
 }
 
-pub fn detect_with(env: &impl EnvProbe, args_no_color: bool, args_no_images: bool) -> RenderCtx {
+pub fn detect_with(
+    env: &impl EnvProbe,
+    args_no_color: bool,
+    args_no_images: bool,
+    args_theme: Option<String>,
+    args_width: Option<usize>,
+) -> RenderCtx {
     let is_tty = env.is_tty();
     let use_color = is_tty && !args_no_color && !env.no_color();
-    let width = env.columns().unwrap_or(80);
+    let width = args_width.or_else(|| env.columns()).unwrap_or(80);
 
     let image_backend = if args_no_images || !is_tty {
         ImageBackend::Placeholder
@@ -91,11 +109,14 @@ pub fn detect_with(env: &impl EnvProbe, args_no_color: bool, args_no_images: boo
         ImageBackend::Placeholder
     };
 
+    let code_theme = args_theme.unwrap_or_else(|| "base16-ocean.dark".to_string());
+
     RenderCtx {
         is_tty,
         use_color,
         width,
         image_backend,
+        code_theme,
     }
 }
 
@@ -113,7 +134,7 @@ mod tests {
             columns: Some(120),
         };
         let ctx = detect_with(
-            &env, /* args.no_color */ false, /* args.no_images */ false,
+            &env, /* args.no_color */ false, /* args.no_images */ false, None, None,
         );
         assert_eq!(ctx.image_backend, ImageBackend::Kitty);
         assert!(ctx.use_color);
@@ -130,7 +151,7 @@ mod tests {
             term: None,
             columns: None,
         };
-        let ctx = detect_with(&env, false, false);
+        let ctx = detect_with(&env, false, false, None, None);
         assert_eq!(ctx.image_backend, ImageBackend::ITerm2);
         assert_eq!(ctx.width, 80); // default
     }
@@ -144,7 +165,7 @@ mod tests {
             term: Some("xterm-kitty".into()),
             columns: None,
         };
-        let ctx = detect_with(&env, false, false);
+        let ctx = detect_with(&env, false, false, None, None);
         assert_eq!(ctx.image_backend, ImageBackend::Kitty);
     }
 
@@ -157,7 +178,7 @@ mod tests {
             term: Some("xterm-256color".into()),
             columns: None,
         };
-        let ctx = detect_with(&env, false, false);
+        let ctx = detect_with(&env, false, false, None, None);
         assert_eq!(ctx.image_backend, ImageBackend::Placeholder);
     }
 
@@ -170,7 +191,7 @@ mod tests {
             term: None,
             columns: None,
         };
-        let ctx = detect_with(&env, false, false);
+        let ctx = detect_with(&env, false, false, None, None);
         assert_eq!(ctx.image_backend, ImageBackend::Placeholder);
         assert!(!ctx.use_color);
     }
@@ -184,7 +205,7 @@ mod tests {
             term: None,
             columns: None,
         };
-        let ctx = detect_with(&env, false, false);
+        let ctx = detect_with(&env, false, false, None, None);
         assert!(!ctx.use_color);
     }
 
@@ -197,7 +218,7 @@ mod tests {
             term: None,
             columns: None,
         };
-        let ctx = detect_with(&env, /* no_color */ true, false);
+        let ctx = detect_with(&env, /* no_color */ true, false, None, None);
         assert!(!ctx.use_color);
     }
 
@@ -210,7 +231,59 @@ mod tests {
             term: None,
             columns: None,
         };
-        let ctx = detect_with(&env, false, /* no_images */ true);
+        let ctx = detect_with(&env, false, /* no_images */ true, None, None);
         assert_eq!(ctx.image_backend, ImageBackend::Placeholder);
+    }
+
+    #[test]
+    fn theme_arg_overrides_default() {
+        let env = TestEnv {
+            is_tty: true,
+            no_color: false,
+            term_program: Some("ghostty".into()),
+            term: None,
+            columns: Some(120),
+        };
+        let ctx = detect_with(&env, false, false, Some("InspiredGitHub".into()), None);
+        assert_eq!(ctx.code_theme, "InspiredGitHub");
+    }
+
+    #[test]
+    fn default_theme_when_arg_none() {
+        let env = TestEnv {
+            is_tty: true,
+            no_color: false,
+            term_program: Some("ghostty".into()),
+            term: None,
+            columns: Some(120),
+        };
+        let ctx = detect_with(&env, false, false, None, None);
+        assert_eq!(ctx.code_theme, "base16-ocean.dark");
+    }
+
+    #[test]
+    fn width_arg_overrides_env_columns() {
+        let env = TestEnv {
+            is_tty: true,
+            no_color: false,
+            term_program: Some("ghostty".into()),
+            term: None,
+            columns: Some(80),
+        };
+        let ctx = detect_with(&env, false, false, None, Some(120));
+        assert_eq!(ctx.width, 120);
+    }
+
+    #[test]
+    fn width_falls_back_to_env_then_default() {
+        let env = TestEnv {
+            is_tty: true,
+            no_color: false,
+            term_program: None,
+            term: None,
+            columns: None,
+        };
+        let ctx = detect_with(&env, false, false, None, None);
+        assert_eq!(ctx.width, 80);
     }
 }
