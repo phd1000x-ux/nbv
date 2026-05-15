@@ -3,7 +3,12 @@ use std::process::Command;
 const BIN: &str = env!("CARGO_BIN_EXE_nbv");
 
 fn run(args: &[&str]) -> (String, String, i32) {
-    let out = Command::new(BIN).args(args).output().expect("run nbv");
+    let out = Command::new(BIN)
+        .args(args)
+        .env_remove("NBV_THEME")
+        .env_remove("NBV_WIDTH")
+        .output()
+        .expect("run nbv");
     let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
     let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
     let code = out.status.code().unwrap_or(-1);
