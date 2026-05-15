@@ -42,6 +42,7 @@ In Ghostty or iTerm2, matplotlib/seaborn PNG outputs render inline.
 - **Smart defaults.** Auto-detects TTY, terminal program, and color support. No environment variables needed.
 - **Pipe-safe.** Detects non-TTY and degrades gracefully. `nbv x.ipynb | less -R` works; `SIGPIPE` from `| head` exits 0 cleanly.
 - **Polished.** Cell boxes drawn with Unicode box-drawing, syntax-highlighted code via `syntect`, formatted markdown, ANSI-colored tracebacks preserved from the kernel.
+- **Tables.** GFM pipe tables in markdown cells and pandas DataFrame `text/html` output render as box-drawn terminal tables with column alignment.
 
 ## Install
 
@@ -101,18 +102,18 @@ That is the full surface. Anything not on a flag is auto-detected from the envir
 
 ## What gets rendered
 
-| ipynb element | v0.2 behavior |
+| ipynb element | v0.3 behavior |
 | --- | --- |
-| Markdown cells | Headers (H1–H6), lists, blockquotes, inline code, fenced code blocks (highlighted via syntect), bold/italic, link text |
+| Markdown cells | Headers (H1–H6), lists, blockquotes, inline code, fenced code blocks (highlighted via syntect), bold/italic, link text, GFM tables |
 | Code cells | Syntect highlighting using the notebook's kernel language (defaults to Python) |
 | `text/plain` output | Plain text inside a cell box |
 | `image/png` output | Inline in Ghostty/iTerm2 (native protocol); placeholder box (`🖼 PNG W×H`) elsewhere |
-| `text/html` (DataFrame) | Falls back to the kernel's `text/plain` representation — pandas always emits both |
+| `text/html` (DataFrame) | Rendered as a box-drawn table; falls back to the kernel's `text/plain` representation when the HTML is not a parseable table |
 | Error / traceback | Kernel's ANSI colors preserved when supported, stripped when `--no-color` |
 | Stream `stdout`/`stderr` | Plain text inside its own cell box, labeled |
 | Unknown cell or output type | Skipped with a `(skipped)` placeholder and a one-line stderr warning; rendering continues |
 
-Not yet in v0.2: tables in markdown, math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
+Not yet in v0.3: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
 
 ## Terminal support
 
