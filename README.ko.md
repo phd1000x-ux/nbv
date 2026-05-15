@@ -96,11 +96,14 @@ nbv --no-color analysis.ipynb               # ANSI 색 끄기
 nbv --no-images analysis.ipynb              # 이미지 강제 placeholder
 nbv --theme InspiredGitHub analysis.ipynb   # 코드 블록의 syntect 테마 변경
 nbv --width 120 analysis.ipynb              # 출력 폭 강제 (최소 20; 기본: 자동 감지)
+NBV_THEME=InspiredGitHub nbv analysis.ipynb # --theme 의 환경변수 폴백 (플래그가 있으면 플래그 우선)
+NBV_WIDTH=120 nbv analysis.ipynb            # --width 의 환경변수 폴백
 nbv -h                                      # 도움말
 nbv -V                                      # 버전
 ```
 
 이게 전부. 플래그에 없는 동작은 모두 환경에서 자동 감지된다.
+`--theme`, `--width` 는 플래그가 없으면 환경변수 `NBV_THEME` / `NBV_WIDTH` 도 읽기 때문에 셸에서 한 번 `export` 해두면 영속화된다.
 
 ## 무엇을 어떻게 렌더링하나
 

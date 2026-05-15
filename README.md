@@ -96,11 +96,14 @@ nbv --no-color analysis.ipynb               # disable ANSI colors
 nbv --no-images analysis.ipynb              # force image placeholders
 nbv --theme InspiredGitHub analysis.ipynb   # use a different syntect theme for code blocks
 nbv --width 120 analysis.ipynb              # force output width (min 20; default: auto-detect)
+NBV_THEME=InspiredGitHub nbv analysis.ipynb # env-var fallback for --theme (flag wins when both)
+NBV_WIDTH=120 nbv analysis.ipynb            # env-var fallback for --width
 nbv -h                                      # help
 nbv -V                                      # version
 ```
 
 That is the full surface. Anything not on a flag is auto-detected from the environment.
+`--theme` and `--width` also read `NBV_THEME` / `NBV_WIDTH` from the environment when the flag is absent, so you can `export` them once per shell.
 
 ## What gets rendered
 
