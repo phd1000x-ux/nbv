@@ -23,11 +23,11 @@ pub struct Args {
     pub no_images: bool,
 
     /// Syntect theme for code blocks (default: base16-ocean.dark)
-    #[arg(long, value_name = "NAME")]
+    #[arg(long, env = "NBV_THEME", value_name = "NAME")]
     pub theme: Option<String>,
 
     /// Force output width to N columns, min 20 (default: auto-detect)
-    #[arg(long, value_name = "N", value_parser = clap::value_parser!(u16).range(20..))]
+    #[arg(long, env = "NBV_WIDTH", value_name = "N", value_parser = clap::value_parser!(u16).range(20..))]
     pub width: Option<u16>,
 }
 
