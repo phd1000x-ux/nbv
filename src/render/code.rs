@@ -46,7 +46,11 @@ pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> 
         } else {
             strip_ansi(&escaped)
         };
-        frame::wrap_line(&to_render, ctx, w)?;
+        if ctx.framed {
+            frame::wrap_line(&to_render, ctx, w)?;
+        } else {
+            frame::bare_line(&to_render, ctx, w)?;
+        }
     }
     Ok(())
 }

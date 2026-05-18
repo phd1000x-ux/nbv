@@ -184,7 +184,13 @@ fn fit_columns(table: &Table, budget: usize) -> Fit {
 /// Render `table` as a box-drawn grid, emitting each full line through
 /// `frame::wrap_line` so it sits inside the surrounding cell box.
 pub fn render(table: &Table, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
-    let budget = ctx.width.saturating_sub(4);
+    // In framed mode the table sits inside `│ … │` (4 chars overhead).
+    // In bare mode the table fills the full width directly.
+    let budget = if ctx.framed {
+        ctx.width.saturating_sub(4)
+    } else {
+        ctx.width
+    };
     let fit = fit_columns(table, budget);
     if fit.widths.is_empty() {
         return Ok(());
@@ -227,6 +233,7 @@ pub fn render(table: &Table, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<
 }
 
 /// Emit a horizontal border line, e.g. `┌───┬───┐`, through `frame::wrap_line`.
+/// In bare mode (ctx.framed=false) the line is emitted via `frame::bare_line`.
 fn border_line(
     widths: &[usize],
     left: char,
@@ -247,33 +254,58 @@ fn border_line(
     } else {
         line
     };
-    frame::wrap_line(&line, ctx, w)
+    if ctx.framed {
+        frame::wrap_line(&line, ctx, w)
+    } else {
+        frame::bare_line(&line, ctx, w)
+    }
 }
 
 /// Emit a content row, e.g. `│ a │ b │`, through `frame::wrap_line`.
+/// In bare mode (ctx.framed=false) plain `|` separators are used and the line
+/// is emitted via `frame::bare_line`.
 /// When `bold` is true each cell is wrapped in BOLD/RESET (the header row).
 fn data_line(cells: &[String], bold: bool, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
-    // DIM the `│` separators; cell content stays at its own intensity.
-    let bar = if ctx.use_color {
-        format!("{}│{}", theme::DIM, theme::RESET)
-    } else {
-        "│".to_string()
-    };
-    let mut line = String::new();
-    line.push_str(&bar);
-    for cell in cells {
-        line.push(' ');
-        if bold {
-            line.push_str(theme::BOLD);
-            line.push_str(cell);
-            line.push_str(theme::RESET);
+    if ctx.framed {
+        // DIM the `│` separators; cell content stays at its own intensity.
+        let bar = if ctx.use_color {
+            format!("{}│{}", theme::DIM, theme::RESET)
         } else {
-            line.push_str(cell);
-        }
-        line.push(' ');
+            "│".to_string()
+        };
+        let mut line = String::new();
         line.push_str(&bar);
+        for cell in cells {
+            line.push(' ');
+            if bold {
+                line.push_str(theme::BOLD);
+                line.push_str(cell);
+                line.push_str(theme::RESET);
+            } else {
+                line.push_str(cell);
+            }
+            line.push(' ');
+            line.push_str(&bar);
+        }
+        frame::wrap_line(&line, ctx, w)
+    } else {
+        // Bare mode: use plain `|` separators, no outer frame.
+        let mut line = String::new();
+        line.push('|');
+        for cell in cells {
+            line.push(' ');
+            if bold {
+                line.push_str(theme::BOLD);
+                line.push_str(cell);
+                line.push_str(theme::RESET);
+            } else {
+                line.push_str(cell);
+            }
+            line.push(' ');
+            line.push('|');
+        }
+        frame::bare_line(&line, ctx, w)
     }
-    frame::wrap_line(&line, ctx, w)
 }
 
 #[cfg(test)]
