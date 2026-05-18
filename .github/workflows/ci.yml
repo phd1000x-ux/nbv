@@ -44,6 +44,17 @@ jobs:
                 --component clippy \
                 --no-modify-path
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          # Fail fast if rustup ever creates proxies as symlinks: current_exe()
+          # would resolve through the link and run rustup-init installer mode,
+          # reintroducing the cargo→rustup-init flake. Catch it here, not in
+          # the rustfmt step.
+          for bin in cargo rustc rustfmt; do
+            if [ -L "$HOME/.cargo/bin/$bin" ]; then
+              echo "::error::$bin is a symlink — multi-call dispatch will resolve to rustup-init"
+              ls -la "$HOME/.cargo/bin/$bin"
+              exit 1
+            fi
+          done
           "$HOME/.cargo/bin/cargo" --version
           "$HOME/.cargo/bin/rustfmt" --version
           "$HOME/.cargo/bin/cargo" clippy --version
