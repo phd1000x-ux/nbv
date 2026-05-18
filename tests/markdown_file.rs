@@ -37,7 +37,7 @@ fn renders_markdown_file_bare() {
 #[test]
 fn renders_markdown_extension_uppercase() {
     let src = std::fs::read_to_string("tests/fixtures/sample.md").unwrap();
-    let tmp = std::env::temp_dir().join("nbv_sample.MD");
+    let tmp = std::env::temp_dir().join(format!("nbv_sample_{}.MD", std::process::id()));
     std::fs::write(&tmp, &src).unwrap();
     let (out, _err, code) = run(&[
         "--no-color",
@@ -48,4 +48,5 @@ fn renders_markdown_extension_uppercase() {
     ]);
     assert_eq!(code, 0);
     assert!(out.contains("Sample"));
+    let _ = std::fs::remove_file(&tmp);
 }

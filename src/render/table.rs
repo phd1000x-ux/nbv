@@ -111,7 +111,7 @@ struct Fit {
 }
 
 /// Total rendered width of a table whose columns have the given widths:
-/// a leading `│`, then `" {content} │"` (content + 3) per column.
+/// a leading separator (`│` in framed mode, `|` in bare), then ` {content} {sep}` (content + 3) per column.
 fn rendered_width(widths: &[usize]) -> usize {
     1 + widths.iter().map(|w| w + 3).sum::<usize>()
 }
