@@ -32,12 +32,6 @@ $ nbv analysis.ipynb
 └──────────────────────────────────────────────────────────┘
 ```
 
-nbv also renders bare Markdown documents:
-
-```
-$ nbv README.md
-```
-
 In Ghostty or iTerm2, matplotlib/seaborn PNG outputs render inline.
 
 ## Features

@@ -43,13 +43,12 @@ fn main() -> ExitCode {
     let file = match args.file {
         Some(f) => f,
         None => {
-            eprintln!("nbv: no file given");
+            eprintln!("nbv: no notebook given");
             eprintln!();
             eprintln!("Usage:");
-            eprintln!("    nbv [OPTIONS] <FILE.ipynb>      Render a Jupyter notebook to stdout");
-            eprintln!("    nbv [OPTIONS] <FILE.md>         Render a Markdown document to stdout");
+            eprintln!("    nbv [OPTIONS] <FILE>      Render a Jupyter notebook to stdout");
             eprintln!(
-                "    nbv setup [--yes]               Add the nbv binary directory to your shell PATH"
+                "    nbv setup [--yes]         Add the nbv binary directory to your shell PATH"
             );
             eprintln!();
             eprintln!("Run `nbv --help` for more details.");
@@ -57,10 +56,17 @@ fn main() -> ExitCode {
         }
     };
 
-    let ext = file
-        .extension()
-        .and_then(|s| s.to_str())
-        .map(|s| s.to_ascii_lowercase());
+    let nb = match parse::from_path(&file) {
+        Err(e) => {
+            eprintln!("nbv: {}: {}", file.display(), e);
+            return ExitCode::from(1);
+        }
+        Ok(Err(e)) => {
+            eprintln!("nbv: failed to parse '{}': {}", file.display(), e);
+            return ExitCode::from(3);
+        }
+        Ok(Ok(nb)) => nb,
+    };
 
     let ctx = env::detect(
         args.no_color,
@@ -71,42 +77,7 @@ fn main() -> ExitCode {
 
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());
-
-    let write_result: io::Result<()> = match ext.as_deref() {
-        Some("ipynb") => {
-            let nb = match parse::from_path(&file) {
-                Err(e) => {
-                    eprintln!("nbv: {}: {}", file.display(), e);
-                    return ExitCode::from(1);
-                }
-                Ok(Err(e)) => {
-                    eprintln!("nbv: failed to parse '{}': {}", file.display(), e);
-                    return ExitCode::from(3);
-                }
-                Ok(Ok(nb)) => nb,
-            };
-            render::render_notebook(&nb, &ctx, &mut w)
-        }
-        Some("md") | Some("markdown") => {
-            let source = match std::fs::read_to_string(&file) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("nbv: {}: {}", file.display(), e);
-                    return ExitCode::from(1);
-                }
-            };
-            render::render_markdown_doc(&source, &ctx, &mut w)
-        }
-        _ => {
-            eprintln!(
-                "nbv: {}: unsupported file type. Supported: .ipynb, .md, .markdown",
-                file.display()
-            );
-            return ExitCode::from(2);
-        }
-    };
-
-    if let Err(e) = write_result {
+    if let Err(e) = render::render_notebook(&nb, &ctx, &mut w) {
         if e.kind() == io::ErrorKind::BrokenPipe {
             return ExitCode::SUCCESS;
         }

@@ -78,16 +78,6 @@ pub fn render_cell(
     Ok(())
 }
 
-/// Render a standalone Markdown document (no cell frame).
-///
-/// Clones `ctx` and forces `framed=false` so the shared `markdown::render`
-/// pipeline emits bare lines instead of `│ … │` cell borders.
-pub fn render_markdown_doc(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
-    let mut bare = ctx.clone();
-    bare.framed = false;
-    markdown::render(source, &bare, w)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,7 +91,6 @@ mod tests {
             width: 60,
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
-            framed: true,
         }
     }
 
@@ -148,20 +137,5 @@ mod tests {
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("Unknown") || s.contains("skipped"));
         assert!(s.contains("normal"));
-    }
-
-    #[test]
-    fn render_markdown_doc_emits_bare_content() {
-        let ctx = ctx(); // framed=true in the helper
-        let mut buf = Vec::new();
-        render_markdown_doc("# Title\n\nbody.\n", &ctx, &mut buf).unwrap();
-        let s = String::from_utf8(buf).unwrap();
-        assert!(
-            !s.contains('│'),
-            "doc helper must force framed=false; got:\n{}",
-            s
-        );
-        assert!(s.contains("Title"));
-        assert!(s.contains("body."));
     }
 }

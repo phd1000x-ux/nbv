@@ -46,7 +46,6 @@ mod dispatch_tests {
             width: 60,
             image_backend: b,
             code_theme: "base16-ocean.dark".into(),
-            framed: true,
         }
     }
 

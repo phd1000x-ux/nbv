@@ -46,11 +46,7 @@ pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> 
         } else {
             strip_ansi(&escaped)
         };
-        if ctx.framed {
-            frame::wrap_line(&to_render, ctx, w)?;
-        } else {
-            frame::bare_line(&to_render, ctx, w)?;
-        }
+        frame::wrap_line(&to_render, ctx, w)?;
     }
     Ok(())
 }
@@ -101,7 +97,6 @@ mod tests {
             width: 60,
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
-            framed: true,
         }
     }
 
@@ -112,7 +107,6 @@ mod tests {
             width: 200,
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
-            framed: true,
         }
     }
 
