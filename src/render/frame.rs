@@ -65,21 +65,23 @@ pub fn close(ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     }
 }
 
-/// 박스 내부 한 줄: `│ {content padded} │`.
+/// Format one line of content into a fixed visible width.
 ///
-/// content에 ANSI CSI escape가 있어도 visible width만 카운트해서 정확히 padding/truncate한다.
-/// 컬러 escape가 emit된 경우 padding이 그 색을 물려받지 않도록 끝에 RESET을 inject한다.
-pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) -> io::Result<()> {
-    let inner_w = ctx.width.saturating_sub(4); // `│ ` + content + ` │`
+/// Handles ANSI CSI escape preservation, `\r` drop, `\t` expansion to the next
+/// 8-column stop, and CJK-aware truncation. Returns the formatted slice and
+/// the visible-width count actually consumed, so the caller can compute right
+/// padding. The caller is responsible for emitting any surrounding chrome
+/// (`│ … │` for `wrap_line`, nothing for `bare_line`) and trailing RESET when
+/// styled content was truncated.
+fn fmt_line_content(content: &str, max_width: usize) -> (String, usize, bool) {
     let mut trimmed = String::with_capacity(content.len());
     let mut used = 0usize;
     let mut had_style = false;
     let mut chars = content.chars().peekable();
     while let Some(ch) = chars.next() {
         if ch == '\x1b' && chars.peek() == Some(&'[') {
-            // CSI 시퀀스: width 0으로 취급하고 그대로 보존
             trimmed.push(ch);
-            trimmed.push(chars.next().unwrap()); // '['
+            trimmed.push(chars.next().unwrap());
             had_style = true;
             while let Some(&nc) = chars.peek() {
                 trimmed.push(chars.next().unwrap());
@@ -88,14 +90,9 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
                 }
             }
         } else if ch == '\r' {
-            // Carriage return은 터미널에서 cursor를 라인 시작으로 보내 박스를 덮어쓴다.
-            // 일반 stream output(`\r\n`, tqdm progress 등)에서 흔하므로 drop.
             continue;
         } else if ch == '\t' {
-            // Tab은 unicode-width 기준 0이지만 터미널은 다음 8-col stop으로 cursor 점프.
-            // 그대로 두면 visible width가 padding 계산보다 커져 박스 폭을 넘어 wrap된다.
-            // content position 기준 8-col stop으로 spaces expand.
-            let to_add = (8 - (used % 8)).min(inner_w.saturating_sub(used));
+            let to_add = (8 - (used % 8)).min(max_width.saturating_sub(used));
             if to_add == 0 {
                 break;
             }
@@ -103,13 +100,23 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
             used += to_add;
         } else {
             let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-            if used + cw > inner_w {
+            if used + cw > max_width {
                 break;
             }
             trimmed.push(ch);
             used += cw;
         }
     }
+    (trimmed, used, had_style)
+}
+
+/// 박스 내부 한 줄: `│ {content padded} │`.
+///
+/// content에 ANSI CSI escape가 있어도 visible width만 카운트해서 정확히 padding/truncate한다.
+/// 컬러 escape가 emit된 경우 padding이 그 색을 물려받지 않도록 끝에 RESET을 inject한다.
+pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) -> io::Result<()> {
+    let inner_w = ctx.width.saturating_sub(4); // `│ ` + content + ` │`
+    let (mut trimmed, used, had_style) = fmt_line_content(content, inner_w);
     if had_style {
         trimmed.push_str(theme::RESET);
     }
@@ -128,6 +135,16 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
     } else {
         writeln!(w, "│ {}{} │", trimmed, " ".repeat(pad))
     }
+}
+
+/// Emit one content line without `│` borders. Used by standalone document
+/// rendering where the full terminal width is available to content.
+pub fn bare_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) -> io::Result<()> {
+    let (mut trimmed, _used, had_style) = fmt_line_content(content, ctx.width);
+    if had_style {
+        trimmed.push_str(theme::RESET);
+    }
+    writeln!(w, "{}", trimmed)
 }
 
 #[cfg(test)]
@@ -360,5 +377,61 @@ mod tests {
         assert!(s.contains("x"));
         assert!(s.contains("="));
         assert!(s.contains("1"));
+    }
+
+    #[test]
+    fn bare_line_writes_content_without_borders() {
+        let mut buf = Vec::new();
+        bare_line("hello", &ctx(30), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        let line = s.trim_end_matches('\n');
+        assert!(!line.contains('│'), "bare_line must not emit │ borders");
+        assert!(line.starts_with("hello"));
+    }
+
+    #[test]
+    fn bare_line_truncates_to_ctx_width() {
+        let mut buf = Vec::new();
+        bare_line(&"x".repeat(100), &ctx(20), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        let line = s.trim_end_matches('\n');
+        // Bare mode uses the full width (no `│ … │` padding cost).
+        assert_eq!(ansi_width(line), 20);
+    }
+
+    #[test]
+    fn bare_line_drops_carriage_return() {
+        let mut buf = Vec::new();
+        bare_line("hello\r", &ctx(30), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(!s.contains('\r'));
+    }
+
+    #[test]
+    fn bare_line_expands_tab_to_next_8col_stop() {
+        let mut buf = Vec::new();
+        bare_line("hello\tworld", &ctx(40), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(!s.contains('\t'));
+        assert!(s.contains("hello   world"));
+    }
+
+    #[test]
+    fn bare_line_preserves_ansi_and_visible_width() {
+        let ctx = RenderCtx {
+            is_tty: true,
+            use_color: true,
+            width: 30,
+            image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
+            framed: false,
+        };
+        let content = format!("{}red{}", theme::FG_RED, theme::RESET);
+        let mut buf = Vec::new();
+        bare_line(&content, &ctx, &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("red"));
+        let line = s.trim_end_matches('\n');
+        assert!(ansi_width(line) <= 30);
     }
 }
