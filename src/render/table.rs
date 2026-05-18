@@ -289,6 +289,7 @@ mod tests {
             width,
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
+            framed: true,
         }
     }
 

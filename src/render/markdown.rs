@@ -286,6 +286,7 @@ mod tests {
             width: 60,
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
+            framed: true,
         }
     }
 
@@ -341,6 +342,7 @@ mod tests {
             width: 200,
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
+            framed: true,
         };
         render("```python\nx = 1\n```", &ctx_wide, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();

@@ -12,6 +12,10 @@ pub struct RenderCtx {
     pub width: usize,
     pub image_backend: ImageBackend,
     pub code_theme: String,
+    /// When true, lines from per-cell renderers are wrapped in `│ … │` box
+    /// borders by `render::frame::wrap_line`. Set false for standalone
+    /// document rendering (e.g. a `.md` file passed to nbv directly).
+    pub framed: bool,
 }
 
 pub trait EnvProbe {
@@ -117,6 +121,7 @@ pub fn detect_with(
         width,
         image_backend,
         code_theme,
+        framed: true,
     }
 }
 
@@ -285,5 +290,18 @@ mod tests {
         };
         let ctx = detect_with(&env, false, false, None, None);
         assert_eq!(ctx.width, 80);
+    }
+
+    #[test]
+    fn detect_with_defaults_framed_to_true() {
+        let env = TestEnv {
+            is_tty: true,
+            no_color: false,
+            term_program: None,
+            term: None,
+            columns: None,
+        };
+        let ctx = detect_with(&env, false, false, None, None);
+        assert!(ctx.framed, "framed should default to true for backward compat");
     }
 }
