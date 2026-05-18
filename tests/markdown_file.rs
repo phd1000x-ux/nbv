@@ -50,3 +50,25 @@ fn renders_markdown_extension_uppercase() {
     assert!(out.contains("Sample"));
     let _ = std::fs::remove_file(&tmp);
 }
+
+#[test]
+fn unknown_extension_errors_with_exit_2() {
+    let (_out, err, code) = run(&["tests/fixtures/unknown.xyz"]);
+    assert_eq!(code, 2, "exit code");
+    assert!(
+        err.contains("unsupported file type"),
+        "stderr should mention unsupported file type; got:\n{}",
+        err
+    );
+    assert!(err.contains("tests/fixtures/unknown.xyz"));
+    assert!(err.contains(".ipynb"));
+    assert!(err.contains(".md"));
+}
+
+#[test]
+fn missing_markdown_file_errors_with_exit_1() {
+    let (_out, err, code) = run(&["tests/fixtures/does-not-exist.md"]);
+    assert_eq!(code, 1);
+    assert!(err.contains("tests/fixtures/does-not-exist.md"));
+    assert!(err.starts_with("nbv: tests/fixtures/does-not-exist.md:"));
+}
