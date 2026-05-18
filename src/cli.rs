@@ -5,13 +5,13 @@ use std::path::PathBuf;
 #[command(
     name = "nbv",
     version,
-    about = "A fast terminal Jupyter notebook viewer"
+    about = "A fast terminal viewer for Jupyter notebooks and Markdown documents"
 )]
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Command>,
 
-    /// Path to the .ipynb file
+    /// Path to a `.ipynb`, `.md`, or `.markdown` file
     pub file: Option<PathBuf>,
 
     /// Disable ANSI color output

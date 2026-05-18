@@ -416,7 +416,11 @@ mod tests {
         let mut buf = Vec::new();
         render("# Hello\n\nA paragraph.\n", &ctx_bare(40), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(!s.contains('│'), "bare markdown must not contain │; got:\n{}", s);
+        assert!(
+            !s.contains('│'),
+            "bare markdown must not contain │; got:\n{}",
+            s
+        );
         assert!(s.contains("Hello"));
         assert!(s.contains("A paragraph."));
     }
@@ -428,7 +432,11 @@ mod tests {
         let mut buf = Vec::new();
         render("Inside a cell.\n", &ctx(false), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(s.contains('│'), "framed markdown must keep │ borders; got:\n{}", s);
+        assert!(
+            s.contains('│'),
+            "framed markdown must keep │ borders; got:\n{}",
+            s
+        );
     }
 
     #[test]

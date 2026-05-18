@@ -302,6 +302,9 @@ mod tests {
             columns: None,
         };
         let ctx = detect_with(&env, false, false, None, None);
-        assert!(ctx.framed, "framed should default to true for backward compat");
+        assert!(
+            ctx.framed,
+            "framed should default to true for backward compat"
+        );
     }
 }

@@ -85,8 +85,16 @@ fn image_ref_renders_alt_text_only() {
         tmp.to_str().unwrap(),
     ]);
     assert_eq!(code, 0);
-    assert!(out.contains("the-logo"), "alt text should appear; got:\n{}", out);
-    assert!(!out.contains("logo.png"), "URL should not appear; got:\n{}", out);
+    assert!(
+        out.contains("the-logo"),
+        "alt text should appear; got:\n{}",
+        out
+    );
+    assert!(
+        !out.contains("logo.png"),
+        "URL should not appear; got:\n{}",
+        out
+    );
     let _ = std::fs::remove_file(&tmp);
 }
 

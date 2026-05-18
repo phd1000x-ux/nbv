@@ -46,12 +46,8 @@ fn main() -> ExitCode {
             eprintln!("nbv: no file given");
             eprintln!();
             eprintln!("Usage:");
-            eprintln!(
-                "    nbv [OPTIONS] <FILE.ipynb>      Render a Jupyter notebook to stdout"
-            );
-            eprintln!(
-                "    nbv [OPTIONS] <FILE.md>         Render a Markdown document to stdout"
-            );
+            eprintln!("    nbv [OPTIONS] <FILE.ipynb>      Render a Jupyter notebook to stdout");
+            eprintln!("    nbv [OPTIONS] <FILE.md>         Render a Markdown document to stdout");
             eprintln!(
                 "    nbv setup [--yes]               Add the nbv binary directory to your shell PATH"
             );
