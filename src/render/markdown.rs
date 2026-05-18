@@ -152,8 +152,13 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
             }
             Event::Rule => {
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
-                let dashes = "─".repeat(ctx.width.saturating_sub(4));
-                frame::wrap_line(&dashes, ctx, w)?;
+                if ctx.framed {
+                    let dashes = "─".repeat(ctx.width.saturating_sub(4));
+                    frame::wrap_line(&dashes, ctx, w)?;
+                } else {
+                    let dashes = "─".repeat(ctx.width);
+                    frame::bare_line(&dashes, ctx, w)?;
+                }
             }
             Event::Start(Tag::Table(aligns)) => {
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
@@ -220,7 +225,11 @@ fn flush_line(
     } else {
         std::mem::take(acc)
     };
-    frame::wrap_line(&line, ctx, w)?;
+    if ctx.framed {
+        frame::wrap_line(&line, ctx, w)?;
+    } else {
+        frame::bare_line(&line, ctx, w)?;
+    }
     acc.clear();
     Ok(())
 }
@@ -287,6 +296,17 @@ mod tests {
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
             framed: true,
+        }
+    }
+
+    fn ctx_bare(width: usize) -> RenderCtx {
+        RenderCtx {
+            is_tty: true,
+            use_color: false,
+            width,
+            image_backend: ImageBackend::Placeholder,
+            code_theme: "base16-ocean.dark".into(),
+            framed: false,
         }
     }
 
@@ -389,5 +409,34 @@ mod tests {
         render("| A | B |\n|---|---|\n| x |", &ctx(false), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x"));
+    }
+
+    #[test]
+    fn bare_render_emits_no_box_borders() {
+        let mut buf = Vec::new();
+        render("# Hello\n\nA paragraph.\n", &ctx_bare(40), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(!s.contains('│'), "bare markdown must not contain │; got:\n{}", s);
+        assert!(s.contains("Hello"));
+        assert!(s.contains("A paragraph."));
+    }
+
+    #[test]
+    fn framed_render_still_uses_borders() {
+        // The existing `ctx(use_color)` helper returns framed=true (the default
+        // set by Task 1); reuse it so this test stays aligned with the cell path.
+        let mut buf = Vec::new();
+        render("Inside a cell.\n", &ctx(false), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains('│'), "framed markdown must keep │ borders; got:\n{}", s);
+    }
+
+    #[test]
+    fn bare_render_rule_is_full_width_without_borders() {
+        let mut buf = Vec::new();
+        render("before\n\n---\n\nafter\n", &ctx_bare(20), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("─"), "rule should still emit a dashes line");
+        assert!(!s.contains('│'));
     }
 }
