@@ -72,3 +72,40 @@ fn missing_markdown_file_errors_with_exit_1() {
     assert!(err.contains("tests/fixtures/does-not-exist.md"));
     assert!(err.starts_with("nbv: tests/fixtures/does-not-exist.md:"));
 }
+
+#[test]
+fn image_ref_renders_alt_text_only() {
+    let tmp = std::env::temp_dir().join(format!("nbv_image_md_{}.md", std::process::id()));
+    std::fs::write(&tmp, "Logo: ![the-logo](logo.png) inline.\n").unwrap();
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "--width",
+        "40",
+        tmp.to_str().unwrap(),
+    ]);
+    assert_eq!(code, 0);
+    assert!(out.contains("the-logo"), "alt text should appear; got:\n{}", out);
+    assert!(!out.contains("logo.png"), "URL should not appear; got:\n{}", out);
+    let _ = std::fs::remove_file(&tmp);
+}
+
+#[test]
+fn yaml_front_matter_does_not_crash() {
+    let tmp = std::env::temp_dir().join(format!("nbv_frontmatter_{}.md", std::process::id()));
+    std::fs::write(
+        &tmp,
+        "---\ntitle: Hello\nauthor: Me\n---\n\n# Body\n\nReal content.\n",
+    )
+    .unwrap();
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "--width",
+        "40",
+        tmp.to_str().unwrap(),
+    ]);
+    assert_eq!(code, 0, "front matter must not crash the renderer");
+    assert!(out.contains("Real content."));
+    let _ = std::fs::remove_file(&tmp);
+}
