@@ -44,19 +44,26 @@ jobs:
                 --component clippy \
                 --no-modify-path
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          # Fail fast if rustup ever creates proxies as symlinks: current_exe()
-          # would resolve through the link and run rustup-init installer mode,
-          # reintroducing the cargo→rustup-init flake. Catch it here, not in
-          # the rustfmt step.
-          for bin in cargo rustc rustfmt; do
-            if [ -L "$HOME/.cargo/bin/$bin" ]; then
-              echo "::error::$bin is a symlink — multi-call dispatch will resolve to rustup-init"
-              ls -la "$HOME/.cargo/bin/$bin"
+          # Functional dispatch check. The original flake was `cargo` running
+          # as rustup-init installer (output "Usage: rustup-init[EXE]") instead
+          # of dispatching to cargo. Grep the version output to fail fast at
+          # bootstrap if proxies aren't dispatching, regardless of whether
+          # they're hardlinks or symlinks to rustup.
+          check() {
+            local bin="$1" expect="$2"
+            local out
+            out=$("$HOME/.cargo/bin/$bin" --version 2>&1) || true
+            if ! printf '%s' "$out" | grep -qE "^${expect} "; then
+              echo "::error::$bin proxy not dispatching to $expect; got:"
+              printf '%s\n' "$out"
+              ls -la "$HOME/.cargo/bin/" || true
               exit 1
             fi
-          done
-          "$HOME/.cargo/bin/cargo" --version
-          "$HOME/.cargo/bin/rustfmt" --version
+            printf '%s\n' "$out"
+          }
+          check cargo   cargo
+          check rustc   rustc
+          check rustfmt rustfmt
           "$HOME/.cargo/bin/cargo" clippy --version
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt
