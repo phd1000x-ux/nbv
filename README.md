@@ -101,10 +101,30 @@ NBV_THEME=InspiredGitHub nbv analysis.ipynb # env-var fallback for --theme (flag
 NBV_WIDTH=120 nbv analysis.ipynb            # env-var fallback for --width
 nbv -h                                      # help
 nbv -V                                      # version
+nbv completion bash                         # print bash completion script
+nbv mangen                                  # print section-1 man page
 ```
 
 That is the full surface. Anything not on a flag is auto-detected from the environment.
 `--theme` and `--width` also read `NBV_THEME` / `NBV_WIDTH` from the environment when the flag is absent, so you can `export` them once per shell.
+
+## Shell completion
+
+nbv ships completion scripts for bash, zsh, fish, powershell, and elvish via
+clap_complete. Pipe the output to the location your shell expects:
+
+```bash
+nbv completion bash       > /etc/bash_completion.d/nbv
+nbv completion zsh        > ~/.zfunc/_nbv
+nbv completion fish       > ~/.config/fish/completions/nbv.fish
+nbv completion powershell > $PROFILE.nbv-completion.ps1   # then dot-source from your profile
+```
+
+A man page is available via `nbv mangen`:
+
+```bash
+nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # then `man nbv`
+```
 
 ## What gets rendered
 
