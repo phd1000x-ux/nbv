@@ -35,6 +35,7 @@ fn ansi_width(s: &str) -> usize {
 ///
 /// Emits in 32-byte chunks of a const slice, falling through to the
 /// remainder. Replaces the per-line `" ".repeat(n)` allocations inside `wrap_line`.
+#[allow(dead_code)] // wired up in the next commit (Task 2)
 fn write_spaces(w: &mut (impl Write + ?Sized), n: usize) -> io::Result<()> {
     const SPACES: &[u8] = b"                                "; // 32 ASCII spaces
     let mut remaining = n;
@@ -376,7 +377,13 @@ mod tests {
         for n in [0usize, 1, 31, 32, 33, 100] {
             let mut buf = Vec::new();
             write_spaces(&mut buf, n).unwrap();
-            assert_eq!(buf.len(), n, "write_spaces({}) wrote {} bytes", n, buf.len());
+            assert_eq!(
+                buf.len(),
+                n,
+                "write_spaces({}) wrote {} bytes",
+                n,
+                buf.len()
+            );
             assert!(
                 buf.iter().all(|&b| b == b' '),
                 "write_spaces({}) emitted non-space bytes: {:?}",
