@@ -35,7 +35,6 @@ fn ansi_width(s: &str) -> usize {
 ///
 /// Emits in 32-byte chunks of a const slice, falling through to the
 /// remainder. Replaces the per-line `" ".repeat(n)` allocations inside `wrap_line`.
-#[allow(dead_code)] // wired up in the next commit (Task 2)
 fn write_spaces(w: &mut (impl Write + ?Sized), n: usize) -> io::Result<()> {
     const SPACES: &[u8] = b"                                "; // 32 ASCII spaces
     let mut remaining = n;
@@ -133,18 +132,13 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
     }
     let pad = inner_w - used;
     if ctx.use_color {
-        writeln!(
-            w,
-            "{}│{} {}{} {}│{}",
-            theme::DIM,
-            theme::RESET,
-            trimmed,
-            " ".repeat(pad),
-            theme::DIM,
-            theme::RESET
-        )
+        write!(w, "{}│{} {}", theme::DIM, theme::RESET, trimmed)?;
+        write_spaces(w, pad)?;
+        writeln!(w, " {}│{}", theme::DIM, theme::RESET)
     } else {
-        writeln!(w, "│ {}{} │", trimmed, " ".repeat(pad))
+        write!(w, "│ {}", trimmed)?;
+        write_spaces(w, pad)?;
+        writeln!(w, " │")
     }
 }
 
