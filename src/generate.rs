@@ -11,6 +11,11 @@ pub fn completion(shell: Shell, w: &mut dyn Write) -> io::Result<()> {
     Ok(())
 }
 
+pub fn mangen(w: &mut dyn Write) -> io::Result<()> {
+    let cmd = Args::command();
+    clap_mangen::Man::new(cmd).render(w)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,6 +77,29 @@ mod tests {
         assert!(
             s.contains("edit:completion:arg-completer") || s.contains("set edit:completion"),
             "elvish completion should reference `edit:completion:arg-completer`; got first 200 chars:\n{}",
+            &s[..s.len().min(200)]
+        );
+    }
+
+    #[test]
+    fn mangen_emits_section_1_header_for_nbv() {
+        let mut buf = Vec::new();
+        mangen(&mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(
+            s.contains(".TH"),
+            "output should contain a groff .TH directive; got first 200 chars:\n{}",
+            &s[..s.len().min(200)]
+        );
+        let th_line = s.lines().find(|l| l.contains(".TH")).unwrap_or("");
+        assert!(
+            th_line.contains("\"1\"") || th_line.contains(" 1 "),
+            ".TH line should reference section 1; got: {}",
+            th_line
+        );
+        assert!(
+            s.contains("nbv"),
+            "man page should reference program name `nbv`; got first 200 chars:\n{}",
             &s[..s.len().min(200)]
         );
     }
