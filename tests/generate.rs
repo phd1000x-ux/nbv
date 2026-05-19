@@ -30,18 +30,28 @@ fn completion_bash_succeeds_with_expected_markers() {
 fn completion_zsh_succeeds() {
     let (out, _err, code) = run(&["completion", "zsh"]);
     assert_eq!(code, 0);
-    assert!(!out.is_empty());
+    let s = String::from_utf8_lossy(&out);
+    assert!(
+        s.contains("#compdef") || s.contains("_nbv"),
+        "zsh completion missing shell markers; got first 200 chars:\n{}",
+        &s[..s.len().min(200)]
+    );
 }
 
 #[test]
 fn completion_fish_succeeds() {
     let (out, _err, code) = run(&["completion", "fish"]);
     assert_eq!(code, 0);
-    assert!(!out.is_empty());
+    let s = String::from_utf8_lossy(&out);
+    assert!(
+        s.contains("complete -c nbv"),
+        "fish completion missing `complete -c nbv`; got first 200 chars:\n{}",
+        &s[..s.len().min(200)]
+    );
 }
 
 #[test]
-fn mangen_succeeds_and_starts_with_groff_header() {
+fn mangen_succeeds_and_emits_groff_header() {
     let (out, _err, code) = run(&["mangen"]);
     assert_eq!(code, 0);
     let s = String::from_utf8(out).expect("utf-8");
