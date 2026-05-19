@@ -167,7 +167,7 @@ v0.4 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, appli
 ## 개발
 
 ```bash
-cargo test              # 164 tests (139 unit + 25 integration)
+cargo test              # 165 tests (140 unit + 25 integration)
 cargo build --release   # target/release/nbv (약 3 MB)
 ```
 
