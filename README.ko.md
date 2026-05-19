@@ -61,14 +61,14 @@ cargo install nbv
 **Prebuilt 바이너리 (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.1-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.2-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
 **Prebuilt 바이너리 (Linux x86_64, static musl):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.1-x86_64-unknown-linux-musl.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.2-x86_64-unknown-linux-musl.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
@@ -167,7 +167,7 @@ v0.4 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, appli
 ## 개발
 
 ```bash
-cargo test              # 106 tests (96 unit + 10 integration)
+cargo test              # 164 tests (139 unit + 25 integration)
 cargo build --release   # target/release/nbv (약 3 MB)
 ```
 

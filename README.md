@@ -61,14 +61,14 @@ cargo install nbv
 **Prebuilt binary (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.1-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.2-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
 **Prebuilt binary (Linux x86_64, static musl):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.1-x86_64-unknown-linux-musl.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.2-x86_64-unknown-linux-musl.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
@@ -167,7 +167,7 @@ Detection is automatic from `$TERM_PROGRAM` and `$TERM`. Override with `--no-col
 ## Develop
 
 ```bash
-cargo test              # 106 tests (96 unit + 10 integration)
+cargo test              # 164 tests (139 unit + 25 integration)
 cargo build --release   # ~3 MB binary at target/release/nbv
 ```
 
