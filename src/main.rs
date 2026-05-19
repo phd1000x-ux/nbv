@@ -43,6 +43,8 @@ fn main() -> ExitCode {
     let file = match args.file {
         Some(f) => f,
         None => {
+            eprintln!("nbv {}", env!("CARGO_PKG_VERSION"));
+            eprintln!();
             eprintln!("nbv: no notebook given");
             eprintln!();
             eprintln!("Usage:");
