@@ -56,18 +56,12 @@ fn main() -> ExitCode {
             eprintln!("nbv: no notebook given");
             eprintln!();
             eprintln!("Usage:");
-            eprintln!(
-                "    nbv [OPTIONS] <FILE>          Render a Jupyter notebook to stdout"
-            );
+            eprintln!("    nbv [OPTIONS] <FILE>          Render a Jupyter notebook to stdout");
             eprintln!(
                 "    nbv setup [--yes]             Add the nbv binary directory to your shell PATH"
             );
-            eprintln!(
-                "    nbv completion <SHELL>        Generate shell completion script"
-            );
-            eprintln!(
-                "    nbv mangen                    Generate man page to stdout"
-            );
+            eprintln!("    nbv completion <SHELL>        Generate shell completion script");
+            eprintln!("    nbv mangen                    Generate man page to stdout");
             eprintln!();
             eprintln!("Run `nbv --help` for more details.");
             return ExitCode::from(2);
@@ -108,13 +102,13 @@ fn main() -> ExitCode {
 
 fn run_generate<F>(f: F) -> ExitCode
 where
-    F: FnOnce(&mut dyn std::io::Write) -> std::io::Result<()>,
+    F: FnOnce(&mut dyn Write) -> io::Result<()>,
 {
-    let stdout = std::io::stdout();
+    let stdout = io::stdout();
     let mut w = stdout.lock();
     match f(&mut w) {
         Ok(()) => ExitCode::SUCCESS,
-        Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => ExitCode::SUCCESS,
+        Err(e) if e.kind() == io::ErrorKind::BrokenPipe => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("nbv: write error: {}", e);
             ExitCode::from(1)
