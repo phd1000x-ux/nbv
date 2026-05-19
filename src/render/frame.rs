@@ -116,7 +116,9 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
             if to_add == 0 {
                 break;
             }
-            trimmed.push_str(&" ".repeat(to_add));
+            for _ in 0..to_add {
+                trimmed.push(' ');
+            }
             used += to_add;
         } else {
             let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
