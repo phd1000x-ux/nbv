@@ -43,6 +43,14 @@ pub enum Command {
         #[arg(long, short = 'y')]
         yes: bool,
     },
+    /// Generate a shell completion script to stdout
+    Completion {
+        /// Shell to generate completion for
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
+    /// Generate a section-1 man page to stdout
+    Mangen,
 }
 
 #[cfg(test)]
@@ -121,6 +129,35 @@ mod tests {
         assert!(
             msg.contains("5") && (msg.contains("not in") || msg.contains("range")),
             "got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parses_completion_bash() {
+        let a = Args::try_parse_from(["nbv", "completion", "bash"]).unwrap();
+        match a.command {
+            Some(Command::Completion { shell }) => {
+                assert_eq!(shell, clap_complete::Shell::Bash);
+            }
+            _ => panic!("expected Completion {{ shell: Bash }}"),
+        }
+    }
+
+    #[test]
+    fn parses_mangen() {
+        let a = Args::try_parse_from(["nbv", "mangen"]).unwrap();
+        assert!(matches!(a.command, Some(Command::Mangen)));
+    }
+
+    #[test]
+    fn rejects_unknown_shell() {
+        let r = Args::try_parse_from(["nbv", "completion", "fakeshell"]);
+        assert!(r.is_err());
+        let msg = r.unwrap_err().to_string();
+        assert!(
+            msg.contains("fakeshell") || msg.contains("possible values"),
+            "error should mention the invalid value or possible values; got: {}",
+            msg
         );
     }
 }

@@ -5,6 +5,7 @@ use clap::Parser;
 
 use nbv::cli::{Args, Command};
 use nbv::env;
+use nbv::generate;
 use nbv::ipynb::parse;
 use nbv::render;
 use nbv::setup;
@@ -13,8 +14,15 @@ fn main() -> ExitCode {
     install_sigpipe_handler();
     let args = Args::parse();
 
-    if let Some(Command::Setup { yes }) = args.command {
-        return ExitCode::from(setup::run(yes) as u8);
+    match args.command {
+        Some(Command::Setup { yes }) => return ExitCode::from(setup::run(yes) as u8),
+        Some(Command::Completion { shell }) => {
+            return run_generate(|w| generate::completion(shell, w));
+        }
+        Some(Command::Mangen) => {
+            return run_generate(generate::mangen);
+        }
+        None => {}
     }
 
     if args.list_themes {
@@ -48,9 +56,17 @@ fn main() -> ExitCode {
             eprintln!("nbv: no notebook given");
             eprintln!();
             eprintln!("Usage:");
-            eprintln!("    nbv [OPTIONS] <FILE>      Render a Jupyter notebook to stdout");
             eprintln!(
-                "    nbv setup [--yes]         Add the nbv binary directory to your shell PATH"
+                "    nbv [OPTIONS] <FILE>          Render a Jupyter notebook to stdout"
+            );
+            eprintln!(
+                "    nbv setup [--yes]             Add the nbv binary directory to your shell PATH"
+            );
+            eprintln!(
+                "    nbv completion <SHELL>        Generate shell completion script"
+            );
+            eprintln!(
+                "    nbv mangen                    Generate man page to stdout"
             );
             eprintln!();
             eprintln!("Run `nbv --help` for more details.");
@@ -88,6 +104,22 @@ fn main() -> ExitCode {
     }
     let _ = w.flush();
     ExitCode::SUCCESS
+}
+
+fn run_generate<F>(f: F) -> ExitCode
+where
+    F: FnOnce(&mut dyn std::io::Write) -> std::io::Result<()>,
+{
+    let stdout = std::io::stdout();
+    let mut w = stdout.lock();
+    match f(&mut w) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("nbv: write error: {}", e);
+            ExitCode::from(1)
+        }
+    }
 }
 
 fn install_sigpipe_handler() {
