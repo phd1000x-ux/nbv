@@ -31,6 +31,23 @@ fn ansi_width(s: &str) -> usize {
     w
 }
 
+/// Write `n` ASCII spaces to `w` without allocating a `String`.
+///
+/// Emits in 32-byte chunks of a const slice, falling through to the
+/// remainder. Replaces the per-line `" ".repeat(n)` allocations inside `wrap_line`.
+fn write_spaces(w: &mut (impl Write + ?Sized), n: usize) -> io::Result<()> {
+    const SPACES: &[u8] = b"                                "; // 32 ASCII spaces
+    let mut remaining = n;
+    while remaining >= SPACES.len() {
+        w.write_all(SPACES)?;
+        remaining -= SPACES.len();
+    }
+    if remaining > 0 {
+        w.write_all(&SPACES[..remaining])?;
+    }
+    Ok(())
+}
+
 /// 상단 박스 라인: `┌─ {label} ─...─┐`
 pub fn open(label: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     let label_str = format!(" {} ", label);
@@ -352,5 +369,20 @@ mod tests {
         assert!(s.contains("x"));
         assert!(s.contains("="));
         assert!(s.contains("1"));
+    }
+
+    #[test]
+    fn write_spaces_emits_exact_count_for_boundary_values() {
+        for n in [0usize, 1, 31, 32, 33, 100] {
+            let mut buf = Vec::new();
+            write_spaces(&mut buf, n).unwrap();
+            assert_eq!(buf.len(), n, "write_spaces({}) wrote {} bytes", n, buf.len());
+            assert!(
+                buf.iter().all(|&b| b == b' '),
+                "write_spaces({}) emitted non-space bytes: {:?}",
+                n,
+                buf
+            );
+        }
     }
 }
