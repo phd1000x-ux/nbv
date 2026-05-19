@@ -16,7 +16,7 @@ static THEME_SET: OnceLock<ThemeSet> = OnceLock::new();
 fn syntax_set() -> &'static SyntaxSet {
     SYNTAX_SET.get_or_init(SyntaxSet::load_defaults_newlines)
 }
-fn theme_set() -> &'static ThemeSet {
+pub fn theme_set() -> &'static ThemeSet {
     THEME_SET.get_or_init(ThemeSet::load_defaults)
 }
 

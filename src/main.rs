@@ -26,7 +26,7 @@ fn main() -> ExitCode {
     }
 
     if args.list_themes {
-        let ts = syntect::highlighting::ThemeSet::load_defaults();
+        let ts = render::code::theme_set();
         let mut names: Vec<&String> = ts.themes.keys().collect();
         names.sort();
         for n in names {
@@ -36,7 +36,7 @@ fn main() -> ExitCode {
     }
 
     if let Some(name) = &args.theme {
-        let ts = syntect::highlighting::ThemeSet::load_defaults();
+        let ts = render::code::theme_set();
         if !ts.themes.contains_key(name) {
             eprintln!("nbv: unknown theme '{}'. Available themes:", name);
             let mut names: Vec<&String> = ts.themes.keys().collect();
