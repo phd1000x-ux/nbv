@@ -334,10 +334,19 @@ fn stream_output_has_no_mismatched_number() {
         "tests/fixtures/with_stream.ipynb",
     ]);
     assert_eq!(code, 0);
-    assert!(out.contains("hello from stdout"), "stream text missing:\n{out}");
-    assert!(out.contains("stream (stdout)"), "stream label missing:\n{out}");
+    assert!(
+        out.contains("hello from stdout"),
+        "stream text missing:\n{out}"
+    );
+    assert!(
+        out.contains("stream (stdout)"),
+        "stream label missing:\n{out}"
+    );
     // The code cell keeps its real execution count.
-    assert!(out.contains("In [7]"), "code cell exec count missing:\n{out}");
+    assert!(
+        out.contains("In [7]"),
+        "code cell exec count missing:\n{out}"
+    );
     // Bug was: the stream output was labeled with the cell index ("Out [1]").
     // A stream output has no execution count, so it must carry no bracketed number.
     assert!(

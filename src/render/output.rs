@@ -16,7 +16,7 @@ pub fn render(
 ) -> io::Result<()> {
     match out {
         Output::Stream { name, text: t } => {
-            let label = format!("Out [{}] ── stream ({})", cell_idx, stream_label(name));
+            let label = format!("Out ── stream ({})", stream_label(name));
             header(&label, ctx, w)?;
             text::render(t, ctx, w)?;
             frame::close(ctx, w)?;
@@ -42,7 +42,7 @@ pub fn render(
             frame::close(ctx, w)?;
         }
         Output::Unknown => {
-            let label = format!("Out [{}] ── unknown output", cell_idx);
+            let label = "Out ── unknown output".to_string();
             header(&label, ctx, w)?;
             frame::wrap_line("(skipped)", ctx, w)?;
             frame::close(ctx, w)?;
@@ -61,11 +61,7 @@ fn render_bundle(
 ) -> io::Result<()> {
     // 우선순위: image/png (백엔드 가능 시) → image/png (placeholder) → text/html (표로 파싱되면) → text/plain → 기타 placeholder
     if let Some(b64) = &bundle.image_png {
-        let mime = "image/png";
-        let label = match exec_count {
-            Some(n) => format!("Out [{}] ── {}", n, mime),
-            None => format!("Out ── {}", mime),
-        };
+        let label = out_label(exec_count, "image/png");
         let label = theme::colorize_output_header(&label, ctx.use_color);
         frame::open(&label, ctx, w)?;
         match base64::engine::general_purpose::STANDARD.decode(b64) {
@@ -78,10 +74,7 @@ fn render_bundle(
     // text/html as a table (DataFrames): prefer it over the plain-text repr.
     if let Some(html) = &bundle.text_html {
         if let Some(parsed) = html_table::parse(html) {
-            let label = match exec_count {
-                Some(n) => format!("Out [{}] ── text/html", n),
-                None => "Out ── text/html".to_string(),
-            };
+            let label = out_label(exec_count, "text/html");
             let label = theme::colorize_output_header(&label, ctx.use_color);
             frame::open(&label, ctx, w)?;
             table::render(&parsed, ctx, w)?;
@@ -90,10 +83,7 @@ fn render_bundle(
         }
     }
     if let Some(t) = &bundle.text_plain {
-        let label = match exec_count {
-            Some(n) => format!("Out [{}] ── text/plain", n),
-            None => "Out ── text/plain".to_string(),
-        };
+        let label = out_label(exec_count, "text/plain");
         let label = theme::colorize_output_header(&label, ctx.use_color);
         frame::open(&label, ctx, w)?;
         text::render(t, ctx, w)?;
@@ -108,7 +98,7 @@ fn render_bundle(
         .map(|s| s.to_string())
         .or_else(|| bundle.other.keys().min().cloned());
     let mime = key.as_deref().unwrap_or("(empty)");
-    let label = format!("Out [{}] ── (unsupported: {})", cell_idx, mime);
+    let label = out_label(exec_count, &format!("(unsupported: {mime})"));
     let label = theme::colorize_output_header(&label, ctx.use_color);
     frame::open(&label, ctx, w)?;
     frame::wrap_line("", ctx, w)?;
@@ -125,6 +115,16 @@ fn stream_label(name: &StreamName) -> &'static str {
     match name {
         StreamName::Stdout => "stdout",
         StreamName::Stderr => "stderr",
+    }
+}
+
+/// Build an output box label. Outputs with a real execution count get
+/// `Out [n] ── mime`; outputs without one (display_data, streams) get
+/// `Out ── mime`.
+fn out_label(exec_count: Option<u64>, mime: &str) -> String {
+    match exec_count {
+        Some(n) => format!("Out [{n}] ── {mime}"),
+        None => format!("Out ── {mime}"),
     }
 }
 
@@ -154,8 +154,10 @@ mod tests {
         let mut buf = Vec::new();
         render(&out, 0, 0, &ctx_placeholder(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(s.contains("Out [0]") || s.contains("hello"));
+        assert!(s.contains("stream (stdout)"), "{s}");
         assert!(s.contains("hello"));
+        // stream output has no execution count → no bracketed number
+        assert!(!s.contains("Out ["), "stream must not be numbered: {s}");
     }
 
     #[test]
