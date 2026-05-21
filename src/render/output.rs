@@ -16,7 +16,7 @@ pub fn render(
 ) -> io::Result<()> {
     match out {
         Output::Stream { name, text: t } => {
-            let label = format!("Out ── stream ({})", stream_label(name));
+            let label = out_label(None, &format!("stream ({})", stream_label(name)));
             header(&label, ctx, w)?;
             text::render(t, ctx, w)?;
             frame::close(ctx, w)?;
@@ -42,7 +42,7 @@ pub fn render(
             frame::close(ctx, w)?;
         }
         Output::Unknown => {
-            let label = "Out ── unknown output".to_string();
+            let label = out_label(None, "unknown output");
             header(&label, ctx, w)?;
             frame::wrap_line("(skipped)", ctx, w)?;
             frame::close(ctx, w)?;

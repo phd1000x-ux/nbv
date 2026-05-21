@@ -349,6 +349,8 @@ fn stream_output_has_no_mismatched_number() {
     );
     // Bug was: the stream output was labeled with the cell index ("Out [1]").
     // A stream output has no execution count, so it must carry no bracketed number.
+    // The fixture has only one output (a stream, no execute_result), so "Out ["
+    // must not appear anywhere — the stream label carries no bracketed number.
     assert!(
         !out.contains("Out ["),
         "stream output must not show a bracketed number:\n{out}"
