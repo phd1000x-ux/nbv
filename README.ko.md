@@ -61,14 +61,14 @@ cargo install nbv
 **Prebuilt 바이너리 (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.2-aarch64-apple-darwin.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.5.0-aarch64-apple-darwin.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
 **Prebuilt 바이너리 (Linux x86_64, static musl):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.4.2-x86_64-unknown-linux-musl.tar.gz \
+curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.5.0-x86_64-unknown-linux-musl.tar.gz \
   | tar -xz -C /usr/local/bin
 ```
 
@@ -128,7 +128,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # 그 다음 `man nbv`
 
 ## 무엇을 어떻게 렌더링하나
 
-| ipynb 요소 | v0.4 동작 |
+| ipynb 요소 | v0.5 동작 |
 | --- | --- |
 | 마크다운 셀 | 헤더(H1~H6), 리스트, 블록인용, 인라인 코드, 코드 펜스(syntect로 하이라이팅), 굵게/기울임, 링크 텍스트, GFM 표 |
 | 코드 셀 | 커널 언어로 syntect 하이라이팅 (기본 Python) |
@@ -139,7 +139,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # 그 다음 `man nbv`
 | `stdout`/`stderr` 스트림 | 라벨 붙은 박스 안에 평문 |
 | 알 수 없는 셀/출력 타입 | `(skipped)` placeholder + stderr 경고 한 줄, 렌더링 계속 진행 |
 
-v0.4 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
+v0.5 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
 
 ## 터미널 지원
 
@@ -167,7 +167,7 @@ v0.4 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, appli
 ## 개발
 
 ```bash
-cargo test              # 165 tests (140 unit + 25 integration)
+cargo test              # 166 tests (140 unit + 26 integration)
 cargo build --release   # target/release/nbv (약 3 MB)
 ```
 
