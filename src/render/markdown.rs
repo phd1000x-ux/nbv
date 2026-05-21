@@ -131,7 +131,7 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
             }
             Event::Start(Tag::Link { dest_url, .. }) => {
                 acc.push('[');
-                let _ = dest_url; // v0.1는 텍스트만
+                let _ = dest_url; // 링크는 텍스트만 렌더 (URL 미표시)
             }
             Event::End(TagEnd::Link) => {
                 acc.push(']');
