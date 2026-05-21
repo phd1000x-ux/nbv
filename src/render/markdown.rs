@@ -137,11 +137,7 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 acc.push(']');
             }
             Event::Text(t) => {
-                if let Some(cell) = table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
-                    cell.push_str(&t);
-                } else {
-                    acc.push_str(&t);
-                }
+                text_sink(&mut table, &mut acc).push_str(&t);
             }
             Event::SoftBreak | Event::HardBreak => {
                 if let Some(cell) = table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
@@ -157,39 +153,31 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
             }
             Event::Start(Tag::Table(aligns)) => {
                 flush_line(&mut acc, in_blockquote, ctx, w)?;
-                table = Some(TableBuilder {
-                    align: aligns.iter().map(map_align).collect(),
-                    headers: Vec::new(),
-                    rows: Vec::new(),
-                    cur_row: Vec::new(),
-                    cur_cell: None,
-                });
+                table = Some(TableBuilder::new(&aligns));
             }
             Event::Start(Tag::TableHead) | Event::Start(Tag::TableRow) => {
                 if let Some(t) = table.as_mut() {
-                    t.cur_row = Vec::new();
+                    t.begin_row();
                 }
             }
             Event::End(TagEnd::TableHead) => {
                 if let Some(t) = table.as_mut() {
-                    t.headers = std::mem::take(&mut t.cur_row);
+                    t.end_head();
                 }
             }
             Event::End(TagEnd::TableRow) => {
                 if let Some(t) = table.as_mut() {
-                    let row = std::mem::take(&mut t.cur_row);
-                    t.rows.push(row);
+                    t.end_row();
                 }
             }
             Event::Start(Tag::TableCell) => {
                 if let Some(t) = table.as_mut() {
-                    t.cur_cell = Some(String::new());
+                    t.begin_cell();
                 }
             }
             Event::End(TagEnd::TableCell) => {
                 if let Some(t) = table.as_mut() {
-                    let cell = t.cur_cell.take().unwrap_or_default();
-                    t.cur_row.push(cell.trim().to_string());
+                    t.end_cell();
                 }
             }
             Event::End(TagEnd::Table) => {
@@ -256,6 +244,38 @@ struct TableBuilder {
 }
 
 impl TableBuilder {
+    fn new(aligns: &[Alignment]) -> Self {
+        TableBuilder {
+            align: aligns.iter().map(map_align).collect(),
+            headers: Vec::new(),
+            rows: Vec::new(),
+            cur_row: Vec::new(),
+            cur_cell: None,
+        }
+    }
+
+    fn begin_row(&mut self) {
+        self.cur_row = Vec::new();
+    }
+
+    fn end_head(&mut self) {
+        self.headers = std::mem::take(&mut self.cur_row);
+    }
+
+    fn end_row(&mut self) {
+        let row = std::mem::take(&mut self.cur_row);
+        self.rows.push(row);
+    }
+
+    fn begin_cell(&mut self) {
+        self.cur_cell = Some(String::new());
+    }
+
+    fn end_cell(&mut self) {
+        let cell = self.cur_cell.take().unwrap_or_default();
+        self.cur_row.push(cell.trim().to_string());
+    }
+
     fn into_table(self) -> Table {
         Table::new(self.headers, self.rows, self.align)
     }
@@ -272,6 +292,15 @@ fn map_align(a: &Alignment) -> Align {
 /// True while events are being routed into a table cell's text buffer.
 fn in_table_cell(table: &Option<TableBuilder>) -> bool {
     table.as_ref().is_some_and(|t| t.cur_cell.is_some())
+}
+
+/// Returns the buffer plain text should accumulate into: the open table cell
+/// if there is one, otherwise the line accumulator.
+fn text_sink<'a>(table: &'a mut Option<TableBuilder>, acc: &'a mut String) -> &'a mut String {
+    match table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
+        Some(cell) => cell,
+        None => acc,
+    }
 }
 
 #[cfg(test)]
