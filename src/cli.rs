@@ -5,7 +5,7 @@ use std::path::PathBuf;
 #[command(
     name = "nbv",
     version,
-    about = "A fast terminal Jupyter notebook viewer"
+    about = "A fast terminal-native Jupyter notebook viewer"
 )]
 pub struct Args {
     #[command(subcommand)]
