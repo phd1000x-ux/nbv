@@ -58,6 +58,8 @@ brew install phd1000x-ux/tap/nbv
 cargo install nbv
 ```
 
+> **On Windows?** Native Windows builds aren't supported yet, but nbv runs unmodified under **WSL** (Windows Subsystem for Linux) — install Rust inside your WSL distro and run the `cargo install nbv` above.
+
 **Prebuilt binary (macOS arm64):**
 
 ```bash

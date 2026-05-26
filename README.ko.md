@@ -58,6 +58,8 @@ brew install phd1000x-ux/tap/nbv
 cargo install nbv
 ```
 
+> **Windows에서는?** 네이티브 Windows 빌드는 아직 지원하지 않지만, **WSL**(Windows Subsystem for Linux)에서는 수정 없이 그대로 돌아간다. WSL 배포판 안에 Rust를 설치한 뒤 위의 `cargo install nbv`를 그대로 실행하면 된다.
+
 **Prebuilt 바이너리 (macOS arm64):**
 
 ```bash
