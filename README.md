@@ -12,7 +12,10 @@
   <a href="README.ko.md">Korean</a>
 </p>
 
-A fast terminal-native Jupyter notebook viewer.
+<p align="center">
+  <b>Never leave your terminal to read a notebook.</b><br>
+  A terminal-native <code>.ipynb</code> viewer that renders instantly — no server, no browser — over SSH or straight from a PR.
+</p>
 
 Browse `.ipynb` files in your terminal without firing up a browser, JupyterLab, or VS Code. Designed for the `cat`/`bat`-style workflow — one command, full output streamed to stdout, no UI to navigate.
 

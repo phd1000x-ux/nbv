@@ -12,7 +12,10 @@
   <a href="README.md">English</a>
 </p>
 
-터미널에서 바로 보는 빠른 주피터 노트북 뷰어.
+<p align="center">
+  <b>노트북을 보겠다고 터미널을 떠나지 마세요.</b><br>
+  서버도 브라우저도 없이, 원격 SSH에서든 PR에서든 즉시 읽는 터미널 네이티브 <code>.ipynb</code> 뷰어.
+</p>
 
 브라우저나 JupyterLab, VS Code를 띄우지 않고 `.ipynb` 파일을 터미널에서 그대로 본다. `cat`/`bat` 같은 흐름을 그대로 — 한 번 호출하면 stdout으로 전체 내용을 쏟아내고 끝.
 
