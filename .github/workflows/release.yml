@@ -51,3 +51,68 @@ jobs:
             ${{ steps.pkg.outputs.name }}.sha256
           fail_on_unmatched_files: true
           generate_release_notes: true
+
+  release-macos:
+    runs-on: macos-14
+    # Run after the Linux job so the release (and its generated notes) already
+    # exists; this job only attaches the darwin assets and avoids a create race.
+    needs: release-linux
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      # macos runners ship ~/.cargo/bin/cargo as a symlink to rustup-init, whose
+      # multi-call dispatch resolves current_exe() through the symlink and runs
+      # installer mode. Wipe and reinstall so the proxies dispatch correctly.
+      # Mirrors the proven bootstrap in ci.yml (minus rustfmt/clippy — unused here).
+      - name: Bootstrap Rust toolchain (macOS)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$HOME/.cargo" "$HOME/.rustup"
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y \
+                --default-toolchain stable \
+                --profile minimal \
+                --no-modify-path
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          # Fail fast if the cargo/rustc proxies aren't dispatching (the original
+          # flake was `cargo` running as the rustup-init installer instead).
+          check() {
+            local bin="$1" expect="$2"
+            local out
+            out=$("$HOME/.cargo/bin/$bin" --version 2>&1) || true
+            if ! printf '%s' "$out" | grep -qE "^${expect} "; then
+              echo "::error::$bin proxy not dispatching to $expect; got:"
+              printf '%s\n' "$out"
+              ls -la "$HOME/.cargo/bin/" || true
+              exit 1
+            fi
+            printf '%s\n' "$out"
+          }
+          check cargo cargo
+          check rustc rustc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-arm64
+      - name: Build
+        run: cargo build --release --target aarch64-apple-darwin
+      - name: Package
+        id: pkg
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          NAME="nbv-${TAG}-aarch64-apple-darwin.tar.gz"
+          tar -czf "$NAME" -C target/aarch64-apple-darwin/release nbv
+          shasum -a 256 "$NAME" > "$NAME.sha256"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.pkg.outputs.tag }}
+          files: |
+            ${{ steps.pkg.outputs.name }}
+            ${{ steps.pkg.outputs.name }}.sha256
+          fail_on_unmatched_files: true
