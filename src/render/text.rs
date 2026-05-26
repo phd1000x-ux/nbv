@@ -84,6 +84,9 @@ mod tests {
         let mut buf = Vec::new();
         render("\x1b[31mred\x1b[0m", &ctx, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(s.contains("\x1b[31m"), "color on must keep escapes; got {s:?}");
+        assert!(
+            s.contains("\x1b[31m"),
+            "color on must keep escapes; got {s:?}"
+        );
     }
 }
