@@ -103,4 +103,20 @@ mod tests {
             &s[..s.len().min(200)]
         );
     }
+
+    #[test]
+    fn mangen_documents_env_backed_options() {
+        // clap_mangen 0.3 gates env-var rendering behind the `env` feature; without
+        // it, `NBV_THEME`/`NBV_WIDTH` silently vanish from the man page. Pin them.
+        let mut buf = Vec::new();
+        mangen(&mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        for var in ["NBV_THEME", "NBV_WIDTH"] {
+            assert!(
+                s.contains(var),
+                "man page should document the `{}` environment variable",
+                var
+            );
+        }
+    }
 }
