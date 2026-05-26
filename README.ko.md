@@ -63,14 +63,18 @@ cargo install nbv
 **Prebuilt 바이너리 (macOS arm64):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.5.0-aarch64-apple-darwin.tar.gz \
+TAG=$(curl -fsSL https://api.github.com/repos/phd1000x-ux/nbv/releases/latest \
+  | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-aarch64-apple-darwin.tar.gz" \
   | tar -xz -C /usr/local/bin
 ```
 
 **Prebuilt 바이너리 (Linux x86_64, static musl):**
 
 ```bash
-curl -L https://github.com/phd1000x-ux/nbv/releases/latest/download/nbv-v0.5.0-x86_64-unknown-linux-musl.tar.gz \
+TAG=$(curl -fsSL https://api.github.com/repos/phd1000x-ux/nbv/releases/latest \
+  | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-x86_64-unknown-linux-musl.tar.gz" \
   | tar -xz -C /usr/local/bin
 ```
 
