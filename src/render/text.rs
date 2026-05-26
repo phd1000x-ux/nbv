@@ -1,12 +1,18 @@
 use std::io::{self, Write};
 
 use crate::env::RenderCtx;
-use crate::render::frame;
+use crate::render::{frame, traceback};
 
 pub fn render(text: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     for line in text.split_inclusive('\n') {
         let line = line.trim_end_matches('\n');
-        frame::wrap_line(line, ctx, w)?;
+        // Program output (colorama/rich/pytest/tqdm) can embed raw ANSI. With
+        // color off, strip it so escapes don't leak into the box or piped output.
+        if ctx.use_color {
+            frame::wrap_line(line, ctx, w)?;
+        } else {
+            frame::wrap_line(&traceback::strip_ansi_pub(line), ctx, w)?;
+        }
     }
     if text.is_empty() {
         frame::wrap_line("", ctx, w)?;
@@ -52,5 +58,32 @@ mod tests {
         render("a\n", &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert_eq!(s.matches('\n').count(), 1);
+    }
+
+    #[test]
+    fn strips_embedded_ansi_when_no_color() {
+        // Program output (colorama/rich/pytest) often carries raw ANSI. With
+        // color off, those escapes must not leak into the rendered box.
+        let mut buf = Vec::new();
+        render("\x1b[31mred\x1b[0m normal", &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(
+            !s.contains('\x1b'),
+            "no-color output must not contain ANSI escapes; got {s:?}"
+        );
+        assert!(s.contains("red"));
+        assert!(s.contains("normal"));
+    }
+
+    #[test]
+    fn preserves_embedded_ansi_when_color() {
+        let ctx = RenderCtx {
+            use_color: true,
+            ..ctx()
+        };
+        let mut buf = Vec::new();
+        render("\x1b[31mred\x1b[0m", &ctx, &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("\x1b[31m"), "color on must keep escapes; got {s:?}");
     }
 }
