@@ -150,6 +150,8 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # then `man nbv`
 
 Not yet in v0.5: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
 
+Box borders may misalign around Braille art (U+2800–U+28FF) because the Unicode standard reports width 1 while most monospaced fonts render those glyphs at 2 cells — nbv follows the standard.
+
 ## Terminal support
 
 | Terminal | Color | Images |

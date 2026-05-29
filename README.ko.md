@@ -150,6 +150,8 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # 그 다음 `man nbv`
 
 v0.5 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
 
+Braille 아트(U+2800–U+28FF) 주변에서 박스 테두리가 어긋날 수 있다. 유니코드 표준상 폭 1이지만 대부분의 등폭 폰트는 2셀로 그리기 때문 — nbv는 표준을 따른다.
+
 ## 터미널 지원
 
 | 터미널 | 색 | 이미지 |
