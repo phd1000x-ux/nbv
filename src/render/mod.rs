@@ -50,7 +50,10 @@ pub fn render_notebook(
         .unwrap_or(0..nb.cells.len());
     for idx in range {
         let Some(cell) = nb.cells.get(idx) else { break };
-        render_cell(cell, idx, &lang, ctx, w)?;
+        if filters.code_only && !matches!(cell, Cell::Code { .. }) {
+            continue;
+        }
+        render_cell(cell, idx, &lang, ctx, filters.no_output, w)?;
         w.flush()?;
     }
     Ok(())
@@ -61,6 +64,7 @@ pub fn render_cell(
     idx: usize,
     lang: &str,
     ctx: &RenderCtx,
+    no_output: bool,
     w: &mut impl Write,
 ) -> io::Result<()> {
     match cell {
@@ -77,8 +81,10 @@ pub fn render_cell(
             frame::open(&label, ctx, w)?;
             code::render(source, lang, ctx, w)?;
             frame::close(ctx, w)?;
-            for (i, out) in outputs.iter().enumerate() {
-                output::render(out, idx, i, ctx, w)?;
+            if !no_output {
+                for (i, out) in outputs.iter().enumerate() {
+                    output::render(out, idx, i, ctx, w)?;
+                }
             }
         }
         Cell::Markdown { source } => {
@@ -222,5 +228,44 @@ mod tests {
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         assert!(buf.is_empty());
+    }
+
+    fn fixture_md_code_code() -> Notebook {
+        parse::from_str(r##"{
+            "cells":[
+                {"cell_type":"markdown","source":"INTRO_MD","metadata":{}},
+                {"cell_type":"code","source":"print('A')","metadata":{},"execution_count":1,
+                    "outputs":[{"output_type":"stream","name":"stdout","text":"A\n"}]},
+                {"cell_type":"code","source":"print('B')","metadata":{},"execution_count":2,
+                    "outputs":[{"output_type":"stream","name":"stdout","text":"B\n"}]}
+            ],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap()
+    }
+
+    #[test]
+    fn no_output_hides_stream_outputs_keeps_md_and_code() {
+        let nb = fixture_md_code_code();
+        let f = RenderFilters { no_output: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("INTRO_MD"));
+        assert!(s.contains("print('A')"));
+        assert!(!s.contains("stream (stdout)"), "no-output must hide Out frames: {s}");
+    }
+
+    #[test]
+    fn code_only_drops_markdown_and_outputs() {
+        let nb = fixture_md_code_code();
+        let f = RenderFilters { code_only: true, no_output: true, ..Default::default() };
+        // main.rs will set no_output when code_only is set; we mirror that here.
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(!s.contains("INTRO_MD"));
+        assert!(s.contains("print('A')"));
+        assert!(s.contains("print('B')"));
+        assert!(!s.contains("stream (stdout)"));
     }
 }
