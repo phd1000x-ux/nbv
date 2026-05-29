@@ -37,6 +37,8 @@ $ nbv analysis.ipynb
 
 Ghostty나 iTerm2에서는 matplotlib/seaborn으로 만든 PNG 출력이 셀 안에 인라인으로 그려진다.
 
+레포지토리 클론 직후에 바로 돌려보고 싶다면 `nbv sample.ipynb`를 실행해보면 된다 — 5셀짜리 데모 노트북(마크다운 + stdout 있는 파이썬 코드)이 같이 들어 있다.
+
 ## 주요 기능
 
 - **빠르다.** 셀 단위로 stdout flush — 200셀 노트북도 200ms 이내에 끝나고, 첫 셀은 ms 단위로 보인다.

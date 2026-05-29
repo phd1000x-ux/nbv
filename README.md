@@ -37,6 +37,8 @@ $ nbv analysis.ipynb
 
 In Ghostty or iTerm2, matplotlib/seaborn PNG outputs render inline.
 
+Want to try it on a real notebook right after cloning? `nbv sample.ipynb` ships with the repo as a one-shot demo (5 cells: markdown + Python with stdout).
+
 ## Features
 
 - **Fast.** Per-cell stdout flush — first cell visible in milliseconds, even on 200-cell notebooks (<200 ms total).
