@@ -4,6 +4,7 @@ pub mod html_table;
 pub mod image;
 pub mod markdown;
 pub mod output;
+pub mod plain;
 pub mod table;
 pub mod text;
 pub mod traceback;
@@ -37,6 +38,15 @@ pub fn render_notebook(
     ctx: &RenderCtx,
     w: &mut impl Write,
 ) -> io::Result<()> {
+    if filters.plain {
+        return plain::render_notebook_plain(
+            nb,
+            filters.cells_range.clone(),
+            filters.no_output,
+            filters.code_only,
+            w,
+        );
+    }
     let lang = nb
         .metadata
         .kernelspec
@@ -267,5 +277,50 @@ mod tests {
         assert!(s.contains("print('A')"));
         assert!(s.contains("print('B')"));
         assert!(!s.contains("stream (stdout)"));
+    }
+
+    #[test]
+    fn plain_renders_markdown_with_prefix() {
+        let nb = parse::from_str(r##"{
+            "cells":[{"cell_type":"markdown","source":"# Hello\nWorld","metadata":{}}],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.starts_with("[markdown]\n"));
+        assert!(s.contains("# Hello\nWorld"));
+        assert!(!s.contains('┌'), "plain must not draw frames: {s}");
+    }
+
+    #[test]
+    fn plain_renders_code_source_with_prefix() {
+        let nb = parse::from_str(r##"{
+            "cells":[{"cell_type":"code","source":"x = 1","metadata":{},"execution_count":1,"outputs":[]}],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("[code]\nx = 1"));
+        assert!(!s.contains('\x1b'), "plain must not contain ANSI: {s}");
+    }
+
+    #[test]
+    fn plain_separates_blocks_with_one_blank_line() {
+        let nb = parse::from_str(r##"{
+            "cells":[
+                {"cell_type":"markdown","source":"A","metadata":{}},
+                {"cell_type":"markdown","source":"B","metadata":{}}
+            ],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert_eq!(s, "[markdown]\nA\n\n[markdown]\nB\n");
     }
 }
