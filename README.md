@@ -106,8 +106,16 @@ nbv --no-images analysis.ipynb              # force image placeholders
 nbv --theme InspiredGitHub analysis.ipynb   # use a different syntect theme for code blocks
 nbv --list-themes                           # print available syntect theme names
 nbv --width 120 analysis.ipynb              # force output width (min 20; default: auto-detect)
+nbv --cells 3-7 analysis.ipynb              # render only cells 3..7 (1-based, inclusive)
+nbv --no-output analysis.ipynb              # hide kernel outputs (code + markdown only)
+nbv --code-only analysis.ipynb              # only code-cell source; implies --no-output
+nbv --plain analysis.ipynb                  # plain-text format with [code]/[markdown]/... prefixes
 NBV_THEME=InspiredGitHub nbv analysis.ipynb # env-var fallback for --theme (flag wins when both)
 NBV_WIDTH=120 nbv analysis.ipynb            # env-var fallback for --width
+NBV_CELLS=3-7 nbv analysis.ipynb            # env-var fallback for --cells
+NBV_NO_OUTPUT=1 nbv analysis.ipynb          # env-var fallback for --no-output
+NBV_CODE_ONLY=1 nbv analysis.ipynb          # env-var fallback for --code-only
+NBV_PLAIN=1 nbv analysis.ipynb              # env-var fallback for --plain
 nbv -h                                      # help
 nbv -V                                      # version
 nbv completion bash                         # print bash completion script
@@ -116,6 +124,7 @@ nbv mangen                                  # print section-1 man page
 
 That is the full surface. Anything not on a flag is auto-detected from the environment.
 `--theme` and `--width` also read `NBV_THEME` / `NBV_WIDTH` from the environment when the flag is absent, so you can `export` them once per shell.
+`--plain` forces `--no-color` and `--no-images` so the output is a stable text stream suitable for piping into an LLM or `grep`. `--code-only` implies `--no-output`.
 
 ## Shell completion
 

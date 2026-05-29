@@ -106,8 +106,16 @@ nbv --no-images analysis.ipynb              # 이미지 강제 placeholder
 nbv --theme InspiredGitHub analysis.ipynb   # 코드 블록의 syntect 테마 변경
 nbv --list-themes                           # 사용 가능한 syntect 테마 이름 목록
 nbv --width 120 analysis.ipynb              # 출력 폭 강제 (최소 20; 기본: 자동 감지)
+nbv --cells 3-7 analysis.ipynb              # 3~7번 셀만 렌더 (1-based, inclusive)
+nbv --no-output analysis.ipynb              # 커널 출력 숨김 (코드+마크다운만)
+nbv --code-only analysis.ipynb              # 코드 셀의 source만; --no-output 함의
+nbv --plain analysis.ipynb                  # [code]/[markdown]/… 프리픽스 평문 포맷
 NBV_THEME=InspiredGitHub nbv analysis.ipynb # --theme 의 환경변수 폴백 (플래그가 있으면 플래그 우선)
 NBV_WIDTH=120 nbv analysis.ipynb            # --width 의 환경변수 폴백
+NBV_CELLS=3-7 nbv analysis.ipynb            # --cells의 env-var 폴백
+NBV_NO_OUTPUT=1 nbv analysis.ipynb          # --no-output의 env-var 폴백
+NBV_CODE_ONLY=1 nbv analysis.ipynb          # --code-only의 env-var 폴백
+NBV_PLAIN=1 nbv analysis.ipynb              # --plain의 env-var 폴백
 nbv -h                                      # 도움말
 nbv -V                                      # 버전
 nbv completion bash                         # bash 완성 스크립트 출력
@@ -116,6 +124,7 @@ nbv mangen                                  # section-1 man 페이지 출력
 
 이게 전부. 플래그에 없는 동작은 모두 환경에서 자동 감지된다.
 `--theme`, `--width` 는 플래그가 없으면 환경변수 `NBV_THEME` / `NBV_WIDTH` 도 읽기 때문에 셸에서 한 번 `export` 해두면 영속화된다.
+`--plain`은 `--no-color`와 `--no-images`를 강제하여 LLM 입력이나 `grep` 파이프에 안정적인 텍스트 스트림을 만든다. `--code-only`는 `--no-output`을 함의한다.
 
 ## 쉘 자동완성
 
