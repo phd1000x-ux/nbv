@@ -148,7 +148,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # 그 다음 `man nbv`
 
 ## 무엇을 어떻게 렌더링하나
 
-| ipynb 요소 | v0.5 동작 |
+| ipynb 요소 | v0.6 동작 |
 | --- | --- |
 | 마크다운 셀 | 헤더(H1~H6), 리스트, 블록인용, 인라인 코드, 코드 펜스(syntect로 하이라이팅), 굵게/기울임, 링크 텍스트, GFM 표 |
 | 코드 셀 | 커널 언어로 syntect 하이라이팅 (기본 Python) |
@@ -159,7 +159,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # 그 다음 `man nbv`
 | `stdout`/`stderr` 스트림 | 라벨 붙은 박스 안에 평문 |
 | 알 수 없는 셀/출력 타입 | `(skipped)` placeholder + stderr 경고 한 줄, 렌더링 계속 진행 |
 
-v0.5 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
+v0.6 미지원: 수식(LaTeX), 인터랙티브 위젯, JPEG/SVG 이미지, application/json pretty-print.
 
 Braille 아트(U+2800–U+28FF) 주변에서 박스 테두리가 어긋날 수 있다. 유니코드 표준상 폭 1이지만 대부분의 등폭 폰트는 2셀로 그리기 때문 — nbv는 표준을 따른다.
 

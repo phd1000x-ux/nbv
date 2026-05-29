@@ -148,7 +148,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # then `man nbv`
 
 ## What gets rendered
 
-| ipynb element | v0.5 behavior |
+| ipynb element | v0.6 behavior |
 | --- | --- |
 | Markdown cells | Headers (H1–H6), lists, blockquotes, inline code, fenced code blocks (highlighted via syntect), bold/italic, link text, GFM tables |
 | Code cells | Syntect highlighting using the notebook's kernel language (defaults to Python) |
@@ -159,7 +159,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # then `man nbv`
 | Stream `stdout`/`stderr` | Plain text inside its own cell box, labeled |
 | Unknown cell or output type | Skipped with a `(skipped)` placeholder and a one-line stderr warning; rendering continues |
 
-Not yet in v0.5: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
+Not yet in v0.6: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
 
 Box borders may misalign around Braille art (U+2800–U+28FF) because the Unicode standard reports width 1 while most monospaced fonts render those glyphs at 2 cells — nbv follows the standard.
 
