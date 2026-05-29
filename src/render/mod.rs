@@ -323,4 +323,82 @@ mod tests {
         let s = String::from_utf8(buf).unwrap();
         assert_eq!(s, "[markdown]\nA\n\n[markdown]\nB\n");
     }
+
+    #[test]
+    fn plain_emits_stream_with_stdout_prefix() {
+        let nb = parse::from_str(r##"{
+            "cells":[{"cell_type":"code","source":"print(1)","metadata":{},"execution_count":1,
+                "outputs":[{"output_type":"stream","name":"stdout","text":"1\n"}]}],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("[code]\nprint(1)"));
+        assert!(s.contains("[stdout]\n1"));
+    }
+
+    #[test]
+    fn plain_emits_stderr_with_stderr_prefix() {
+        let nb = parse::from_str(r##"{
+            "cells":[{"cell_type":"code","source":"x","metadata":{},"execution_count":1,
+                "outputs":[{"output_type":"stream","name":"stderr","text":"warn\n"}]}],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("[stderr]\nwarn"));
+    }
+
+    #[test]
+    fn plain_emits_execute_result_text_plain() {
+        let nb = parse::from_str(r##"{
+            "cells":[{"cell_type":"code","source":"42","metadata":{},"execution_count":1,
+                "outputs":[{"output_type":"execute_result","execution_count":1,
+                    "data":{"text/plain":"42"},"metadata":{}}]}],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("[result]\n42"));
+    }
+
+    #[test]
+    fn plain_emits_error_with_traceback() {
+        let nb = parse::from_str(r##"{
+            "cells":[{"cell_type":"code","source":"raise","metadata":{},"execution_count":1,
+                "outputs":[{"output_type":"error","ename":"ValueError","evalue":"bad",
+                    "traceback":["Traceback...","ValueError: bad"]}]}],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("[error]"));
+        assert!(s.contains("ValueError: bad"));
+    }
+
+    #[test]
+    fn plain_image_emits_dimensions_placeholder() {
+        // 1x1 PNG (smallest valid)
+        let png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+        let nb = parse::from_str(&format!(r##"{{
+            "cells":[{{"cell_type":"code","source":"plt.show()","metadata":{{}},"execution_count":1,
+                "outputs":[{{"output_type":"display_data",
+                    "data":{{"image/png":"{}"}},"metadata":{{}}}}]}}],
+            "metadata":{{}},"nbformat":4,"nbformat_minor":5
+        }}"##, png_b64)).unwrap();
+        let f = RenderFilters { plain: true, ..Default::default() };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("[image]"));
+        assert!(s.contains("PNG"));
+    }
 }

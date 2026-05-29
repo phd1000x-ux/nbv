@@ -1,7 +1,11 @@
 use std::io::{self, Write};
 use std::ops::Range;
 
-use crate::ipynb::model::{Cell, Notebook};
+use base64::Engine;
+
+use crate::ipynb::model::{Cell, Notebook, Output, StreamName};
+use crate::render::image::png_info;
+use crate::render::traceback::strip_ansi_pub as strip_ansi;
 
 /// Plain-text renderer: no frames, no color, no images.
 /// Emits prefixed blocks (`[markdown]`, `[code]`, ...) separated by a
@@ -56,11 +60,53 @@ fn render_cell_plain(
 }
 
 fn render_output_plain(
-    _out: &crate::ipynb::model::Output,
-    _first: &mut bool,
-    _w: &mut impl Write,
+    out: &Output,
+    first: &mut bool,
+    w: &mut impl Write,
 ) -> io::Result<()> {
-    // Filled in by Task 8.
+    match out {
+        Output::Stream { name, text } => {
+            let prefix = match name {
+                StreamName::Stdout => "stdout",
+                StreamName::Stderr => "stderr",
+            };
+            emit_block(prefix, text, first, w)?;
+        }
+        Output::ExecuteResult { data, .. } | Output::DisplayData { data } => {
+            if let Some(b64) = &data.image_png {
+                let dims = base64::engine::general_purpose::STANDARD
+                    .decode(b64)
+                    .ok()
+                    .and_then(|bytes| png_info::dimensions(&bytes));
+                let body = match dims {
+                    Some((w_px, h_px)) => format!("PNG {}x{}", w_px, h_px),
+                    None => "PNG (size unknown)".to_string(),
+                };
+                emit_block("image", &body, first, w)?;
+                return Ok(());
+            }
+            if let Some(t) = &data.text_plain {
+                emit_block("result", t, first, w)?;
+                return Ok(());
+            }
+            if let Some(h) = &data.text_html {
+                emit_block("result", h, first, w)?;
+                return Ok(());
+            }
+            // Unknown/empty mime bundle: skip — nothing useful to emit.
+        }
+        Output::Error { traceback, .. } => {
+            let joined: String = traceback
+                .iter()
+                .map(|line| strip_ansi(line))
+                .collect::<Vec<_>>()
+                .join("\n");
+            emit_block("error", &joined, first, w)?;
+        }
+        Output::Unknown => {
+            // Same policy as the cell-level Unknown: skip silently.
+        }
+    }
     Ok(())
 }
 
@@ -78,7 +124,7 @@ fn emit_block(
     *first = false;
     writeln!(w, "[{}]", prefix)?;
     w.write_all(body.as_bytes())?;
-    if !body.ends_with('\n') {
+    if !body.is_empty() && !body.ends_with('\n') {
         w.write_all(b"\n")?;
     }
     Ok(())
