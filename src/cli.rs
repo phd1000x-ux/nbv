@@ -70,6 +70,15 @@ pub struct Args {
     #[arg(long, env = "NBV_WIDTH", value_name = "N", value_parser = clap::value_parser!(u16).range(20..))]
     pub width: Option<u16>,
 
+    /// Render only cell N or cells N-M (1-based, inclusive). Out-of-range silently clamped.
+    #[arg(
+        long,
+        env = "NBV_CELLS",
+        value_name = "SPEC",
+        value_parser = parse_cells_spec,
+    )]
+    pub cells: Option<(NonZeroUsize, NonZeroUsize)>,
+
     /// Print available syntect theme names and exit
     #[arg(long)]
     pub list_themes: bool,
@@ -244,5 +253,31 @@ mod tests {
         assert!(super::parse_cells_spec("abc").is_err());
         assert!(super::parse_cells_spec("3-7-9").is_err());
         assert!(super::parse_cells_spec("3,5").is_err());
+    }
+
+    #[test]
+    fn parses_cells_flag_single() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--cells", "5"]).unwrap();
+        assert_eq!(a.cells.unwrap(), (nz(5), nz(5)));
+    }
+
+    #[test]
+    fn parses_cells_flag_range() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--cells", "3-7"]).unwrap();
+        assert_eq!(a.cells.unwrap(), (nz(3), nz(7)));
+    }
+
+    #[test]
+    fn cells_flag_default_none() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb"]).unwrap();
+        assert!(a.cells.is_none());
+    }
+
+    #[test]
+    fn cells_flag_rejects_reverse_at_cli() {
+        let r = Args::try_parse_from(["nbv", "x.ipynb", "--cells", "7-3"]);
+        assert!(r.is_err());
+        let msg = r.unwrap_err().to_string();
+        assert!(msg.contains("7-3"), "stderr should mention bad input: {msg}");
     }
 }
