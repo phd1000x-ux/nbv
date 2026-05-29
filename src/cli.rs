@@ -1,5 +1,45 @@
 use clap::{Parser, Subcommand};
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
+
+/// Parse a `--cells` value of the form `N` or `N-M` (1-based, inclusive).
+///
+/// Returns `(start, end)` with `start <= end`. Rejects zero, reversed
+/// ranges, open ranges (`-5`, `3-`), comma lists, and any non-numeric
+/// input. The error message includes the offending input so clap's
+/// stderr output stays self-explanatory.
+pub fn parse_cells_spec(s: &str) -> Result<(NonZeroUsize, NonZeroUsize), String> {
+    if s.is_empty() {
+        return Err("empty --cells value".to_string());
+    }
+    let parse_one = |part: &str| -> Result<NonZeroUsize, String> {
+        part.parse::<NonZeroUsize>()
+            .map_err(|_| format!("invalid --cells value '{}' (expected N or N-M, 1-based)", s))
+    };
+    match s.split_once('-') {
+        None => {
+            let n = parse_one(s)?;
+            Ok((n, n))
+        }
+        Some((a, b)) => {
+            if a.is_empty() || b.is_empty() || b.contains('-') {
+                return Err(format!(
+                    "invalid --cells value '{}' (expected N or N-M, 1-based)",
+                    s
+                ));
+            }
+            let start = parse_one(a)?;
+            let end = parse_one(b)?;
+            if start > end {
+                return Err(format!(
+                    "invalid --cells value '{}' (start > end)",
+                    s
+                ));
+            }
+            Ok((start, end))
+        }
+    }
+}
 
 #[derive(Debug, Parser)]
 #[command(
@@ -159,5 +199,50 @@ mod tests {
             "error should mention the invalid value or possible values; got: {}",
             msg
         );
+    }
+
+    use std::num::NonZeroUsize;
+
+    fn nz(n: usize) -> NonZeroUsize {
+        NonZeroUsize::new(n).unwrap()
+    }
+
+    #[test]
+    fn parse_cells_spec_single() {
+        assert_eq!(super::parse_cells_spec("5").unwrap(), (nz(5), nz(5)));
+        assert_eq!(super::parse_cells_spec("1").unwrap(), (nz(1), nz(1)));
+    }
+
+    #[test]
+    fn parse_cells_spec_range() {
+        assert_eq!(super::parse_cells_spec("3-7").unwrap(), (nz(3), nz(7)));
+        assert_eq!(super::parse_cells_spec("1-1").unwrap(), (nz(1), nz(1)));
+    }
+
+    #[test]
+    fn parse_cells_spec_rejects_zero() {
+        assert!(super::parse_cells_spec("0").is_err());
+        assert!(super::parse_cells_spec("0-5").is_err());
+        assert!(super::parse_cells_spec("5-0").is_err());
+    }
+
+    #[test]
+    fn parse_cells_spec_rejects_reverse() {
+        let e = super::parse_cells_spec("7-3").unwrap_err();
+        assert!(e.contains("7-3") || e.contains("reverse") || e.contains("start"));
+    }
+
+    #[test]
+    fn parse_cells_spec_rejects_open_and_empty() {
+        assert!(super::parse_cells_spec("").is_err());
+        assert!(super::parse_cells_spec("-5").is_err());
+        assert!(super::parse_cells_spec("3-").is_err());
+    }
+
+    #[test]
+    fn parse_cells_spec_rejects_non_numeric() {
+        assert!(super::parse_cells_spec("abc").is_err());
+        assert!(super::parse_cells_spec("3-7-9").is_err());
+        assert!(super::parse_cells_spec("3,5").is_err());
     }
 }
