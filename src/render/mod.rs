@@ -37,7 +37,6 @@ pub fn render_notebook(
     ctx: &RenderCtx,
     w: &mut impl Write,
 ) -> io::Result<()> {
-    let _ = filters; // wired in later tasks
     let lang = nb
         .metadata
         .kernelspec
@@ -45,7 +44,12 @@ pub fn render_notebook(
         .and_then(|k| k.language.clone())
         .or_else(|| nb.metadata.language_info.as_ref().map(|l| l.name.clone()))
         .unwrap_or_else(|| "python".into());
-    for (idx, cell) in nb.cells.iter().enumerate() {
+    let range = filters
+        .cells_range
+        .clone()
+        .unwrap_or(0..nb.cells.len());
+    for idx in range {
+        let Some(cell) = nb.cells.get(idx) else { break };
         render_cell(cell, idx, &lang, ctx, w)?;
         w.flush()?;
     }
@@ -175,5 +179,48 @@ mod tests {
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("# A"));
         assert!(s.contains("x=1"));
+    }
+
+    fn fixture_5_cells() -> Notebook {
+        parse::from_str(r##"{
+            "cells":[
+                {"cell_type":"markdown","source":"MD0","metadata":{}},
+                {"cell_type":"markdown","source":"MD1","metadata":{}},
+                {"cell_type":"markdown","source":"MD2","metadata":{}},
+                {"cell_type":"markdown","source":"MD3","metadata":{}},
+                {"cell_type":"markdown","source":"MD4","metadata":{}}
+            ],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap()
+    }
+
+    #[test]
+    fn cells_range_renders_only_slice() {
+        let nb = fixture_5_cells();
+        // 0-based half-open: cells 1 and 2
+        let f = RenderFilters {
+            cells_range: Some(1..3),
+            ..Default::default()
+        };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(!s.contains("MD0"));
+        assert!(s.contains("MD1"));
+        assert!(s.contains("MD2"));
+        assert!(!s.contains("MD3"));
+        assert!(!s.contains("MD4"));
+    }
+
+    #[test]
+    fn empty_cells_range_renders_nothing() {
+        let nb = fixture_5_cells();
+        let f = RenderFilters {
+            cells_range: Some(10..20),
+            ..Default::default()
+        };
+        let mut buf = Vec::new();
+        render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
+        assert!(buf.is_empty());
     }
 }
