@@ -9,13 +9,35 @@ pub mod text;
 pub mod traceback;
 
 use std::io::{self, Write};
+use std::ops::Range;
 
 use crate::env::RenderCtx;
 use crate::ipynb::model::{Cell, Notebook};
 use crate::theme;
 
+/// Render-time filtering decisions, resolved in `main.rs` after flag/env
+/// precedence and after applying implications (`--code-only` ⟹ `--no-output`).
+#[derive(Debug, Default, Clone)]
+pub struct RenderFilters {
+    /// 0-based half-open cell range. `None` = all cells.
+    /// Already clamped against `nb.cells.len()` by the caller.
+    pub cells_range: Option<Range<usize>>,
+    /// Skip the `outputs[]` of every code cell.
+    pub no_output: bool,
+    /// Only render `Cell::Code`; drop everything else.
+    pub code_only: bool,
+    /// Use the plain-text render path instead of box-drawing.
+    pub plain: bool,
+}
+
 /// 노트북 전체를 셀 단위로 렌더. 매 셀 후 flush.
-pub fn render_notebook(nb: &Notebook, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+pub fn render_notebook(
+    nb: &Notebook,
+    filters: &RenderFilters,
+    ctx: &RenderCtx,
+    w: &mut impl Write,
+) -> io::Result<()> {
+    let _ = filters; // wired in later tasks
     let lang = nb
         .metadata
         .kernelspec
@@ -98,7 +120,7 @@ mod tests {
     fn renders_minimal_notebook_without_panicking() {
         let nb = parse::from_str(r##"{"cells":[{"cell_type":"markdown","source":"# Hi","metadata":{}}],"metadata":{},"nbformat":4,"nbformat_minor":5}"##).unwrap();
         let mut buf = Vec::new();
-        render_notebook(&nb, &ctx(), &mut buf).unwrap();
+        render_notebook(&nb, &RenderFilters::default(), &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("Hi"));
     }
@@ -114,7 +136,7 @@ mod tests {
         )
         .unwrap();
         let mut buf = Vec::new();
-        render_notebook(&nb, &ctx(), &mut buf).unwrap();
+        render_notebook(&nb, &RenderFilters::default(), &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("print(1)") || s.contains("print"));
         assert!(s.contains("In [1]"));
@@ -133,9 +155,25 @@ mod tests {
         )
         .unwrap();
         let mut buf = Vec::new();
-        render_notebook(&nb, &ctx(), &mut buf).unwrap();
+        render_notebook(&nb, &RenderFilters::default(), &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("Unknown") || s.contains("skipped"));
         assert!(s.contains("normal"));
+    }
+
+    #[test]
+    fn default_filters_render_all_cells() {
+        let nb = parse::from_str(r##"{
+            "cells":[
+                {"cell_type":"markdown","source":"# A","metadata":{}},
+                {"cell_type":"code","source":"x=1","metadata":{},"execution_count":1,"outputs":[]}
+            ],
+            "metadata":{},"nbformat":4,"nbformat_minor":5
+        }"##).unwrap();
+        let mut buf = Vec::new();
+        render_notebook(&nb, &RenderFilters::default(), &ctx(), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("# A"));
+        assert!(s.contains("x=1"));
     }
 }

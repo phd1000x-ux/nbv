@@ -89,7 +89,7 @@ fn main() -> ExitCode {
 
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());
-    if let Err(e) = render::render_notebook(&nb, &ctx, &mut w) {
+    if let Err(e) = render::render_notebook(&nb, &render::RenderFilters::default(), &ctx, &mut w) {
         if e.kind() == io::ErrorKind::BrokenPipe {
             return ExitCode::SUCCESS;
         }
