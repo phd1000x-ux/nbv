@@ -354,14 +354,14 @@ mod tests {
     #[test]
     fn parse_env_bool_accepts_truthy() {
         for s in ["1", "true", "TRUE", "yes", "YES", "on", "On"] {
-            assert_eq!(super::parse_env_bool(s).unwrap(), true, "input={s}");
+            assert!(super::parse_env_bool(s).unwrap(), "input={s}");
         }
     }
 
     #[test]
     fn parse_env_bool_accepts_falsy() {
         for s in ["0", "false", "FALSE", "no", "NO", "off", "Off", ""] {
-            assert_eq!(super::parse_env_bool(s).unwrap(), false, "input={s}");
+            assert!(!super::parse_env_bool(s).unwrap(), "input={s}");
         }
     }
 
