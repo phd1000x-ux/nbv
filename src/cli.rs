@@ -79,6 +79,18 @@ pub struct Args {
     )]
     pub cells: Option<(NonZeroUsize, NonZeroUsize)>,
 
+    /// Hide kernel outputs; render code and markdown only.
+    #[arg(long, env = "NBV_NO_OUTPUT")]
+    pub no_output: bool,
+
+    /// Render only code-cell source. Implies --no-output.
+    #[arg(long, env = "NBV_CODE_ONLY")]
+    pub code_only: bool,
+
+    /// Plain-text output: no box frames, prefixed sections. Implies --no-color and --no-images.
+    #[arg(long, env = "NBV_PLAIN")]
+    pub plain: bool,
+
     /// Print available syntect theme names and exit
     #[arg(long)]
     pub list_themes: bool,
@@ -279,5 +291,25 @@ mod tests {
         assert!(r.is_err());
         let msg = r.unwrap_err().to_string();
         assert!(msg.contains("7-3"), "stderr should mention bad input: {msg}");
+    }
+
+    #[test]
+    fn parses_no_output_flag() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--no-output"]).unwrap();
+        assert!(a.no_output);
+        let b = Args::try_parse_from(["nbv", "x.ipynb"]).unwrap();
+        assert!(!b.no_output);
+    }
+
+    #[test]
+    fn parses_code_only_flag() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--code-only"]).unwrap();
+        assert!(a.code_only);
+    }
+
+    #[test]
+    fn parses_plain_flag() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--plain"]).unwrap();
+        assert!(a.plain);
     }
 }
