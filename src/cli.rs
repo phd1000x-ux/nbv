@@ -41,6 +41,23 @@ pub fn parse_cells_spec(s: &str) -> Result<(NonZeroUsize, NonZeroUsize), String>
     }
 }
 
+/// Parse a boolean env value using common Unix conventions.
+///
+/// Truthy: `1`, `true`, `yes`, `on` (case-insensitive). Falsy: `0`, `false`,
+/// `no`, `off`, empty string. Anything else is rejected with a clear error.
+/// Used so that `NBV_PLAIN=1` and `NBV_PLAIN=true` both work, matching
+/// the spec's "any non-empty value = on" contract.
+pub fn parse_env_bool(s: &str) -> Result<bool, String> {
+    match s.to_ascii_lowercase().as_str() {
+        "" | "0" | "false" | "no" | "off" => Ok(false),
+        "1" | "true" | "yes" | "on" => Ok(true),
+        other => Err(format!(
+            "invalid boolean '{}' (use 0/1, true/false, yes/no, on/off)",
+            other
+        )),
+    }
+}
+
 #[derive(Debug, Parser)]
 #[command(
     name = "nbv",
@@ -80,15 +97,36 @@ pub struct Args {
     pub cells: Option<(NonZeroUsize, NonZeroUsize)>,
 
     /// Hide kernel outputs; render code and markdown only.
-    #[arg(long, env = "NBV_NO_OUTPUT")]
+    #[arg(
+        long,
+        env = "NBV_NO_OUTPUT",
+        value_parser = parse_env_bool,
+        num_args = 0..=1,
+        default_missing_value = "true",
+        default_value_t = false,
+    )]
     pub no_output: bool,
 
     /// Render only code-cell source. Implies --no-output.
-    #[arg(long, env = "NBV_CODE_ONLY")]
+    #[arg(
+        long,
+        env = "NBV_CODE_ONLY",
+        value_parser = parse_env_bool,
+        num_args = 0..=1,
+        default_missing_value = "true",
+        default_value_t = false,
+    )]
     pub code_only: bool,
 
     /// Plain-text output: no box frames, prefixed sections. Implies --no-color and --no-images.
-    #[arg(long, env = "NBV_PLAIN")]
+    #[arg(
+        long,
+        env = "NBV_PLAIN",
+        value_parser = parse_env_bool,
+        num_args = 0..=1,
+        default_missing_value = "true",
+        default_value_t = false,
+    )]
     pub plain: bool,
 
     /// Print available syntect theme names and exit
@@ -311,5 +349,40 @@ mod tests {
     fn parses_plain_flag() {
         let a = Args::try_parse_from(["nbv", "x.ipynb", "--plain"]).unwrap();
         assert!(a.plain);
+    }
+
+    #[test]
+    fn parse_env_bool_accepts_truthy() {
+        for s in ["1", "true", "TRUE", "yes", "YES", "on", "On"] {
+            assert_eq!(super::parse_env_bool(s).unwrap(), true, "input={s}");
+        }
+    }
+
+    #[test]
+    fn parse_env_bool_accepts_falsy() {
+        for s in ["0", "false", "FALSE", "no", "NO", "off", "Off", ""] {
+            assert_eq!(super::parse_env_bool(s).unwrap(), false, "input={s}");
+        }
+    }
+
+    #[test]
+    fn parse_env_bool_rejects_garbage() {
+        for s in ["maybe", "2", "true!"] {
+            assert!(super::parse_env_bool(s).is_err(), "input={s}");
+        }
+    }
+
+    #[test]
+    fn bare_no_output_still_works() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--no-output"]).unwrap();
+        assert!(a.no_output);
+    }
+
+    #[test]
+    fn no_output_explicit_value_works() {
+        let a = Args::try_parse_from(["nbv", "x.ipynb", "--no-output=true"]).unwrap();
+        assert!(a.no_output);
+        let b = Args::try_parse_from(["nbv", "x.ipynb", "--no-output=false"]).unwrap();
+        assert!(!b.no_output);
     }
 }
