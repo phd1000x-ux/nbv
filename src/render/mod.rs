@@ -54,10 +54,7 @@ pub fn render_notebook(
         .and_then(|k| k.language.clone())
         .or_else(|| nb.metadata.language_info.as_ref().map(|l| l.name.clone()))
         .unwrap_or_else(|| "python".into());
-    let range = filters
-        .cells_range
-        .clone()
-        .unwrap_or(0..nb.cells.len());
+    let range = filters.cells_range.clone().unwrap_or(0..nb.cells.len());
     for idx in range {
         let Some(cell) = nb.cells.get(idx) else { break };
         if filters.code_only && !matches!(cell, Cell::Code { .. }) {
@@ -183,13 +180,16 @@ mod tests {
 
     #[test]
     fn default_filters_render_all_cells() {
-        let nb = parse::from_str(r##"{
+        let nb = parse::from_str(
+            r##"{
             "cells":[
                 {"cell_type":"markdown","source":"# A","metadata":{}},
                 {"cell_type":"code","source":"x=1","metadata":{},"execution_count":1,"outputs":[]}
             ],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap();
+        }"##,
+        )
+        .unwrap();
         let mut buf = Vec::new();
         render_notebook(&nb, &RenderFilters::default(), &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -198,7 +198,8 @@ mod tests {
     }
 
     fn fixture_5_cells() -> Notebook {
-        parse::from_str(r##"{
+        parse::from_str(
+            r##"{
             "cells":[
                 {"cell_type":"markdown","source":"MD0","metadata":{}},
                 {"cell_type":"markdown","source":"MD1","metadata":{}},
@@ -207,7 +208,9 @@ mod tests {
                 {"cell_type":"markdown","source":"MD4","metadata":{}}
             ],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap()
+        }"##,
+        )
+        .unwrap()
     }
 
     #[test]
@@ -241,7 +244,8 @@ mod tests {
     }
 
     fn fixture_md_code_code() -> Notebook {
-        parse::from_str(r##"{
+        parse::from_str(
+            r##"{
             "cells":[
                 {"cell_type":"markdown","source":"INTRO_MD","metadata":{}},
                 {"cell_type":"code","source":"print('A')","metadata":{},"execution_count":1,
@@ -250,25 +254,37 @@ mod tests {
                     "outputs":[{"output_type":"stream","name":"stdout","text":"B\n"}]}
             ],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap()
+        }"##,
+        )
+        .unwrap()
     }
 
     #[test]
     fn no_output_hides_stream_outputs_keeps_md_and_code() {
         let nb = fixture_md_code_code();
-        let f = RenderFilters { no_output: true, ..Default::default() };
+        let f = RenderFilters {
+            no_output: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("INTRO_MD"));
         assert!(s.contains("print('A')"));
-        assert!(!s.contains("stream (stdout)"), "no-output must hide Out frames: {s}");
+        assert!(
+            !s.contains("stream (stdout)"),
+            "no-output must hide Out frames: {s}"
+        );
     }
 
     #[test]
     fn code_only_drops_markdown_and_outputs() {
         let nb = fixture_md_code_code();
-        let f = RenderFilters { code_only: true, no_output: true, ..Default::default() };
+        let f = RenderFilters {
+            code_only: true,
+            no_output: true,
+            ..Default::default()
+        };
         // main.rs will set no_output when code_only is set; we mirror that here.
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
@@ -281,11 +297,17 @@ mod tests {
 
     #[test]
     fn plain_renders_markdown_with_prefix() {
-        let nb = parse::from_str(r##"{
+        let nb = parse::from_str(
+            r##"{
             "cells":[{"cell_type":"markdown","source":"# Hello\nWorld","metadata":{}}],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        }"##,
+        )
+        .unwrap();
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -300,7 +322,10 @@ mod tests {
             "cells":[{"cell_type":"code","source":"x = 1","metadata":{},"execution_count":1,"outputs":[]}],
             "metadata":{},"nbformat":4,"nbformat_minor":5
         }"##).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -310,14 +335,20 @@ mod tests {
 
     #[test]
     fn plain_separates_blocks_with_one_blank_line() {
-        let nb = parse::from_str(r##"{
+        let nb = parse::from_str(
+            r##"{
             "cells":[
                 {"cell_type":"markdown","source":"A","metadata":{}},
                 {"cell_type":"markdown","source":"B","metadata":{}}
             ],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        }"##,
+        )
+        .unwrap();
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -326,12 +357,18 @@ mod tests {
 
     #[test]
     fn plain_emits_stream_with_stdout_prefix() {
-        let nb = parse::from_str(r##"{
+        let nb = parse::from_str(
+            r##"{
             "cells":[{"cell_type":"code","source":"print(1)","metadata":{},"execution_count":1,
                 "outputs":[{"output_type":"stream","name":"stdout","text":"1\n"}]}],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        }"##,
+        )
+        .unwrap();
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -341,12 +378,18 @@ mod tests {
 
     #[test]
     fn plain_emits_stderr_with_stderr_prefix() {
-        let nb = parse::from_str(r##"{
+        let nb = parse::from_str(
+            r##"{
             "cells":[{"cell_type":"code","source":"x","metadata":{},"execution_count":1,
                 "outputs":[{"output_type":"stream","name":"stderr","text":"warn\n"}]}],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        }"##,
+        )
+        .unwrap();
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -355,13 +398,19 @@ mod tests {
 
     #[test]
     fn plain_emits_execute_result_text_plain() {
-        let nb = parse::from_str(r##"{
+        let nb = parse::from_str(
+            r##"{
             "cells":[{"cell_type":"code","source":"42","metadata":{},"execution_count":1,
                 "outputs":[{"output_type":"execute_result","execution_count":1,
                     "data":{"text/plain":"42"},"metadata":{}}]}],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        }"##,
+        )
+        .unwrap();
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -370,13 +419,19 @@ mod tests {
 
     #[test]
     fn plain_emits_error_with_traceback() {
-        let nb = parse::from_str(r##"{
+        let nb = parse::from_str(
+            r##"{
             "cells":[{"cell_type":"code","source":"raise","metadata":{},"execution_count":1,
                 "outputs":[{"output_type":"error","ename":"ValueError","evalue":"bad",
                     "traceback":["Traceback...","ValueError: bad"]}]}],
             "metadata":{},"nbformat":4,"nbformat_minor":5
-        }"##).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        }"##,
+        )
+        .unwrap();
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
@@ -388,13 +443,20 @@ mod tests {
     fn plain_image_emits_dimensions_placeholder() {
         // 1x1 PNG (smallest valid)
         let png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
-        let nb = parse::from_str(&format!(r##"{{
+        let nb = parse::from_str(&format!(
+            r##"{{
             "cells":[{{"cell_type":"code","source":"plt.show()","metadata":{{}},"execution_count":1,
                 "outputs":[{{"output_type":"display_data",
                     "data":{{"image/png":"{}"}},"metadata":{{}}}}]}}],
             "metadata":{{}},"nbformat":4,"nbformat_minor":5
-        }}"##, png_b64)).unwrap();
-        let f = RenderFilters { plain: true, ..Default::default() };
+        }}"##,
+            png_b64
+        ))
+        .unwrap();
+        let f = RenderFilters {
+            plain: true,
+            ..Default::default()
+        };
         let mut buf = Vec::new();
         render_notebook(&nb, &f, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();

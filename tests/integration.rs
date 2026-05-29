@@ -372,8 +372,10 @@ fn frame_count(out: &str) -> usize {
 #[test]
 fn cells_range_renders_only_subset() {
     let (out, _err, code) = run(&[
-        "--no-color", "--no-images",
-        "--cells", "5-10",
+        "--no-color",
+        "--no-images",
+        "--cells",
+        "5-10",
         "tests/fixtures/large.ipynb",
     ]);
     assert_eq!(code, 0);
@@ -386,8 +388,10 @@ fn cells_range_renders_only_subset() {
 #[test]
 fn cells_range_past_end_clamps_silently() {
     let (out, err, code) = run(&[
-        "--no-color", "--no-images",
-        "--cells", "100-9999",
+        "--no-color",
+        "--no-images",
+        "--cells",
+        "100-9999",
         "tests/fixtures/large.ipynb",
     ]);
     assert_eq!(code, 0);
@@ -398,8 +402,10 @@ fn cells_range_past_end_clamps_silently() {
 #[test]
 fn cells_range_entirely_past_end_renders_nothing() {
     let (out, _err, code) = run(&[
-        "--no-color", "--no-images",
-        "--cells", "9999",
+        "--no-color",
+        "--no-images",
+        "--cells",
+        "9999",
         "tests/fixtures/large.ipynb",
     ]);
     assert_eq!(code, 0);
@@ -409,33 +415,38 @@ fn cells_range_entirely_past_end_renders_nothing() {
 #[test]
 fn cells_full_range_matches_unfiltered() {
     let filtered = run(&[
-        "--no-color", "--no-images",
-        "--cells", "1-200",
+        "--no-color",
+        "--no-images",
+        "--cells",
+        "1-200",
         "tests/fixtures/large.ipynb",
-    ]).0;
-    let full = run(&[
-        "--no-color", "--no-images",
-        "tests/fixtures/large.ipynb",
-    ]).0;
+    ])
+    .0;
+    let full = run(&["--no-color", "--no-images", "tests/fixtures/large.ipynb"]).0;
     assert_eq!(filtered, full);
 }
 
 #[test]
 fn no_output_hides_kernel_outputs() {
     let (out, _err, code) = run(&[
-        "--no-color", "--no-images",
+        "--no-color",
+        "--no-images",
         "--no-output",
         "tests/fixtures/with_stream.ipynb",
     ]);
     assert_eq!(code, 0);
-    assert!(!out.contains("Out ── stream"), "Out frames must be hidden: {out}");
+    assert!(
+        !out.contains("Out ── stream"),
+        "Out frames must be hidden: {out}"
+    );
     assert!(out.contains("In ["), "In frames must remain");
 }
 
 #[test]
 fn code_only_drops_markdown_and_outputs() {
     let (out, _err, code) = run(&[
-        "--no-color", "--no-images",
+        "--no-color",
+        "--no-images",
         "--code-only",
         "tests/fixtures/simple.ipynb",
     ]);
@@ -446,23 +457,20 @@ fn code_only_drops_markdown_and_outputs() {
 
 #[test]
 fn plain_strips_boxes_and_uses_prefixes() {
-    let (out, _err, code) = run(&[
-        "--plain",
-        "tests/fixtures/simple.ipynb",
-    ]);
+    let (out, _err, code) = run(&["--plain", "tests/fixtures/simple.ipynb"]);
     assert_eq!(code, 0);
     assert!(!out.contains('┌'), "no frame chars: {out}");
     assert!(!out.contains('│'), "no frame chars: {out}");
-    assert!(out.contains("[markdown]"), "markdown prefix expected: {out}");
+    assert!(
+        out.contains("[markdown]"),
+        "markdown prefix expected: {out}"
+    );
     assert!(out.contains("[code]"), "code prefix expected: {out}");
 }
 
 #[test]
 fn plain_implies_no_color_no_images() {
-    let (out, _err, code) = run(&[
-        "--plain",
-        "tests/fixtures/with_image.ipynb",
-    ]);
+    let (out, _err, code) = run(&["--plain", "tests/fixtures/with_image.ipynb"]);
     assert_eq!(code, 0);
     assert!(!out.contains('\x1b'), "no ANSI escapes: {out:?}");
     assert!(out.contains("[image]"), "image prefix expected: {out}");
@@ -471,11 +479,7 @@ fn plain_implies_no_color_no_images() {
 
 #[test]
 fn plain_and_code_only_compose() {
-    let (out, _err, code) = run(&[
-        "--plain",
-        "--code-only",
-        "tests/fixtures/simple.ipynb",
-    ]);
+    let (out, _err, code) = run(&["--plain", "--code-only", "tests/fixtures/simple.ipynb"]);
     assert_eq!(code, 0);
     assert!(out.contains("[code]"));
     assert!(!out.contains("[markdown]"));

@@ -31,10 +31,7 @@ pub fn parse_cells_spec(s: &str) -> Result<(NonZeroUsize, NonZeroUsize), String>
             let start = parse_one(a)?;
             let end = parse_one(b)?;
             if start > end {
-                return Err(format!(
-                    "invalid --cells value '{}' (start > end)",
-                    s
-                ));
+                return Err(format!("invalid --cells value '{}' (start > end)", s));
             }
             Ok((start, end))
         }
@@ -331,7 +328,10 @@ mod tests {
         let r = Args::try_parse_from(["nbv", "x.ipynb", "--cells", "7-3"]);
         assert!(r.is_err());
         let msg = r.unwrap_err().to_string();
-        assert!(msg.contains("7-3"), "stderr should mention bad input: {msg}");
+        assert!(
+            msg.contains("7-3"),
+            "stderr should mention bad input: {msg}"
+        );
     }
 
     #[test]

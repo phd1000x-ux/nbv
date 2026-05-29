@@ -40,7 +40,9 @@ fn render_cell_plain(
         Cell::Markdown { source } => {
             emit_block("markdown", source, first, w)?;
         }
-        Cell::Code { source, outputs, .. } => {
+        Cell::Code {
+            source, outputs, ..
+        } => {
             emit_block("code", source, first, w)?;
             if !no_output {
                 for out in outputs {
@@ -59,11 +61,7 @@ fn render_cell_plain(
     Ok(())
 }
 
-fn render_output_plain(
-    out: &Output,
-    first: &mut bool,
-    w: &mut impl Write,
-) -> io::Result<()> {
+fn render_output_plain(out: &Output, first: &mut bool, w: &mut impl Write) -> io::Result<()> {
     match out {
         Output::Stream { name, text } => {
             let prefix = match name {
@@ -112,12 +110,7 @@ fn render_output_plain(
 
 /// Write one prefixed block. Inserts a single blank line before every
 /// block except the very first.
-fn emit_block(
-    prefix: &str,
-    body: &str,
-    first: &mut bool,
-    w: &mut impl Write,
-) -> io::Result<()> {
+fn emit_block(prefix: &str, body: &str, first: &mut bool, w: &mut impl Write) -> io::Result<()> {
     if !*first {
         w.write_all(b"\n")?;
     }
