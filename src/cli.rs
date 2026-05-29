@@ -102,6 +102,7 @@ pub struct Args {
         env = "NBV_NO_OUTPUT",
         value_parser = parse_env_bool,
         num_args = 0..=1,
+        require_equals = true,
         default_missing_value = "true",
         default_value_t = false,
     )]
@@ -113,6 +114,7 @@ pub struct Args {
         env = "NBV_CODE_ONLY",
         value_parser = parse_env_bool,
         num_args = 0..=1,
+        require_equals = true,
         default_missing_value = "true",
         default_value_t = false,
     )]
@@ -124,6 +126,7 @@ pub struct Args {
         env = "NBV_PLAIN",
         value_parser = parse_env_bool,
         num_args = 0..=1,
+        require_equals = true,
         default_missing_value = "true",
         default_value_t = false,
     )]
@@ -384,5 +387,23 @@ mod tests {
         assert!(a.no_output);
         let b = Args::try_parse_from(["nbv", "x.ipynb", "--no-output=false"]).unwrap();
         assert!(!b.no_output);
+    }
+
+    #[test]
+    fn bool_flag_does_not_swallow_positional() {
+        // --plain followed by a positional filename should treat the filename
+        // as the positional, NOT as the value of --plain. require_equals = true
+        // makes the optional value form require --plain=true syntax.
+        let a = Args::try_parse_from(["nbv", "--plain", "x.ipynb"]).unwrap();
+        assert!(a.plain);
+        assert_eq!(a.file.as_ref().unwrap().to_string_lossy(), "x.ipynb");
+
+        let b = Args::try_parse_from(["nbv", "--no-output", "x.ipynb"]).unwrap();
+        assert!(b.no_output);
+        assert_eq!(b.file.as_ref().unwrap().to_string_lossy(), "x.ipynb");
+
+        let c = Args::try_parse_from(["nbv", "--code-only", "x.ipynb"]).unwrap();
+        assert!(c.code_only);
+        assert_eq!(c.file.as_ref().unwrap().to_string_lossy(), "x.ipynb");
     }
 }
