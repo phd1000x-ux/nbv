@@ -48,8 +48,8 @@ fn main() -> ExitCode {
         }
     }
 
-    let file = match args.file {
-        Some(f) => f,
+    let file = match &args.file {
+        Some(f) => f.clone(),
         None => {
             eprintln!("nbv {}", env!("CARGO_PKG_VERSION"));
             eprintln!();
@@ -80,16 +80,25 @@ fn main() -> ExitCode {
         Ok(Ok(nb)) => nb,
     };
 
-    let ctx = env::detect(
-        args.no_color,
-        args.no_images,
+    let mut ctx = env::detect(
+        // --plain forces --no-color and --no-images
+        args.no_color || args.plain,
+        args.no_images || args.plain,
         args.theme.clone(),
         args.width.map(|w| w as usize),
     );
+    // Belt-and-braces: even if some future env::detect path would re-enable
+    // these, --plain semantics must hold.
+    if args.plain {
+        ctx.use_color = false;
+        ctx.image_backend = env::ImageBackend::Placeholder;
+    }
+
+    let filters = build_filters(&args, nb.cells.len());
 
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());
-    if let Err(e) = render::render_notebook(&nb, &render::RenderFilters::default(), &ctx, &mut w) {
+    if let Err(e) = render::render_notebook(&nb, &filters, &ctx, &mut w) {
         if e.kind() == io::ErrorKind::BrokenPipe {
             return ExitCode::SUCCESS;
         }
@@ -98,6 +107,20 @@ fn main() -> ExitCode {
     }
     let _ = w.flush();
     ExitCode::SUCCESS
+}
+
+fn build_filters(args: &Args, total_cells: usize) -> render::RenderFilters {
+    let cells_range = args.cells.map(|(start, end)| {
+        let s = (start.get() - 1).min(total_cells);
+        let e = end.get().min(total_cells);
+        s..e
+    });
+    render::RenderFilters {
+        cells_range,
+        no_output: args.no_output || args.code_only,
+        code_only: args.code_only,
+        plain: args.plain,
+    }
 }
 
 fn run_generate<F>(f: F) -> ExitCode
