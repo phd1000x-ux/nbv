@@ -187,7 +187,7 @@ Detection is automatic from `$TERM_PROGRAM` and `$TERM`. Override with `--no-col
 ## Develop
 
 ```bash
-cargo test              # 166 tests (140 unit + 26 integration)
+cargo test              # 212 tests (176 unit + 31 integration + 5 generate)
 cargo build --release   # ~3 MB binary at target/release/nbv
 ```
 
