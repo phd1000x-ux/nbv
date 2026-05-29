@@ -7,6 +7,10 @@ fn run(args: &[&str]) -> (String, String, i32) {
         .args(args)
         .env_remove("NBV_THEME")
         .env_remove("NBV_WIDTH")
+        .env_remove("NBV_CELLS")
+        .env_remove("NBV_NO_OUTPUT")
+        .env_remove("NBV_CODE_ONLY")
+        .env_remove("NBV_PLAIN")
         .output()
         .expect("run nbv");
     let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
@@ -19,7 +23,11 @@ fn run_with_env(env: &[(&str, &str)], args: &[&str]) -> (String, String, i32) {
     let mut cmd = Command::new(BIN);
     cmd.args(args)
         .env_remove("NBV_THEME")
-        .env_remove("NBV_WIDTH");
+        .env_remove("NBV_WIDTH")
+        .env_remove("NBV_CELLS")
+        .env_remove("NBV_NO_OUTPUT")
+        .env_remove("NBV_CODE_ONLY")
+        .env_remove("NBV_PLAIN");
     for (k, v) in env {
         cmd.env(k, v);
     }
@@ -355,4 +363,132 @@ fn stream_output_has_no_mismatched_number() {
         !out.contains("Out ["),
         "stream output must not show a bracketed number:\n{out}"
     );
+}
+
+fn frame_count(out: &str) -> usize {
+    out.matches("┌─").count()
+}
+
+#[test]
+fn cells_range_renders_only_subset() {
+    let (out, _err, code) = run(&[
+        "--no-color", "--no-images",
+        "--cells", "5-10",
+        "tests/fixtures/large.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    let frames = frame_count(&out);
+    assert!(frames >= 6, "expected >=6 frames, got {frames}");
+    let full = run(&["--no-color", "--no-images", "tests/fixtures/large.ipynb"]).0;
+    assert!(out.len() < full.len(), "filtered output should be smaller");
+}
+
+#[test]
+fn cells_range_past_end_clamps_silently() {
+    let (out, err, code) = run(&[
+        "--no-color", "--no-images",
+        "--cells", "100-9999",
+        "tests/fixtures/large.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(err.is_empty(), "no stderr expected: {err}");
+    assert!(!out.is_empty(), "should render some cells");
+}
+
+#[test]
+fn cells_range_entirely_past_end_renders_nothing() {
+    let (out, _err, code) = run(&[
+        "--no-color", "--no-images",
+        "--cells", "9999",
+        "tests/fixtures/large.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(out.is_empty(), "expected empty output, got: {out}");
+}
+
+#[test]
+fn cells_full_range_matches_unfiltered() {
+    let filtered = run(&[
+        "--no-color", "--no-images",
+        "--cells", "1-200",
+        "tests/fixtures/large.ipynb",
+    ]).0;
+    let full = run(&[
+        "--no-color", "--no-images",
+        "tests/fixtures/large.ipynb",
+    ]).0;
+    assert_eq!(filtered, full);
+}
+
+#[test]
+fn no_output_hides_kernel_outputs() {
+    let (out, _err, code) = run(&[
+        "--no-color", "--no-images",
+        "--no-output",
+        "tests/fixtures/with_stream.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(!out.contains("Out ── stream"), "Out frames must be hidden: {out}");
+    assert!(out.contains("In ["), "In frames must remain");
+}
+
+#[test]
+fn code_only_drops_markdown_and_outputs() {
+    let (out, _err, code) = run(&[
+        "--no-color", "--no-images",
+        "--code-only",
+        "tests/fixtures/simple.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(!out.contains("markdown"), "no markdown frames: {out}");
+    assert!(out.contains("In ["), "code frames must remain");
+}
+
+#[test]
+fn plain_strips_boxes_and_uses_prefixes() {
+    let (out, _err, code) = run(&[
+        "--plain",
+        "tests/fixtures/simple.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(!out.contains('┌'), "no frame chars: {out}");
+    assert!(!out.contains('│'), "no frame chars: {out}");
+    assert!(out.contains("[markdown]"), "markdown prefix expected: {out}");
+    assert!(out.contains("[code]"), "code prefix expected: {out}");
+}
+
+#[test]
+fn plain_implies_no_color_no_images() {
+    let (out, _err, code) = run(&[
+        "--plain",
+        "tests/fixtures/with_image.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(!out.contains('\x1b'), "no ANSI escapes: {out:?}");
+    assert!(out.contains("[image]"), "image prefix expected: {out}");
+    assert!(out.contains("PNG"), "image dimensions expected: {out}");
+}
+
+#[test]
+fn plain_and_code_only_compose() {
+    let (out, _err, code) = run(&[
+        "--plain",
+        "--code-only",
+        "tests/fixtures/simple.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(out.contains("[code]"));
+    assert!(!out.contains("[markdown]"));
+    assert!(!out.contains("[stdout]"));
+}
+
+#[test]
+fn nbv_cells_env_var_works() {
+    let (out, _err, code) = run_with_env(
+        &[("NBV_CELLS", "5-10")],
+        &["--no-color", "--no-images", "tests/fixtures/large.ipynb"],
+    );
+    assert_eq!(code, 0);
+    let full = run(&["--no-color", "--no-images", "tests/fixtures/large.ipynb"]).0;
+    assert!(out.len() < full.len());
 }
