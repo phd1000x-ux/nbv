@@ -21,6 +21,10 @@ Browse `.ipynb` files in your terminal without firing up a browser, JupyterLab, 
 
 ## Demo
 
+<p align="center">
+  <img src="assets/demo.png" alt="nbv rendering sample.ipynb in the terminal — markdown, syntax-highlighted Python, stream and text/plain output, and an inline image" width="900">
+</p>
+
 ```
 $ nbv analysis.ipynb
 ┌─ markdown ───────────────────────────────────────────────┐
