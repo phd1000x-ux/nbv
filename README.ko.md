@@ -21,6 +21,10 @@
 
 ## 데모
 
+<p align="center">
+  <img src="assets/demo.png" alt="터미널에서 sample.ipynb를 렌더링하는 nbv — 마크다운, 구문 강조된 파이썬, stream·text/plain 출력, 인라인 이미지" width="900">
+</p>
+
 ```
 $ nbv analysis.ipynb
 ┌─ markdown ───────────────────────────────────────────────┐
