@@ -1,9 +1,13 @@
 use crate::render::table::{Align, Table};
+use std::borrow::Cow;
 
 /// Decode the small set of HTML entities pandas `.to_html()` emits, plus
 /// numeric character references (`&#NN;`). Unknown entities and stray `&`
 /// without a closing `;` are left untouched.
-fn decode_entities(s: &str) -> String {
+fn decode_entities(s: &str) -> Cow<'_, str> {
+    if !s.contains('&') {
+        return Cow::Borrowed(s); // 공통 경로: 엔티티 없음 → 무할당
+    }
     let mut out = String::with_capacity(s.len());
     let mut rest = s;
     while let Some(amp) = rest.find('&') {
@@ -39,7 +43,7 @@ fn decode_entities(s: &str) -> String {
         }
     }
     out.push_str(rest);
-    out
+    Cow::Owned(out)
 }
 
 /// A token from a raw HTML fragment: either a tag or a run of text.
@@ -184,23 +188,40 @@ mod tests {
 
     #[test]
     fn decodes_named_entities() {
-        assert_eq!(decode_entities("&lt;a&gt;"), "<a>");
-        assert_eq!(decode_entities("x &amp; y"), "x & y");
-        assert_eq!(decode_entities("say &quot;hi&quot;"), "say \"hi\"");
-        assert_eq!(decode_entities("it&#39;s"), "it's");
-        assert_eq!(decode_entities("a&nbsp;b"), "a b");
+        assert_eq!(decode_entities("&lt;a&gt;").as_ref(), "<a>");
+        assert_eq!(decode_entities("x &amp; y").as_ref(), "x & y");
+        assert_eq!(decode_entities("say &quot;hi&quot;").as_ref(), "say \"hi\"");
+        assert_eq!(decode_entities("it&#39;s").as_ref(), "it's");
+        assert_eq!(decode_entities("a&nbsp;b").as_ref(), "a b");
     }
 
     #[test]
     fn decodes_numeric_entities() {
-        assert_eq!(decode_entities("&#65;&#66;"), "AB");
+        assert_eq!(decode_entities("&#65;&#66;").as_ref(), "AB");
     }
 
     #[test]
     fn leaves_unknown_or_unterminated_alone() {
-        assert_eq!(decode_entities("100% &done"), "100% &done");
-        assert_eq!(decode_entities("&notanentity;"), "&notanentity;");
-        assert_eq!(decode_entities("plain text"), "plain text");
+        assert_eq!(decode_entities("100% &done").as_ref(), "100% &done");
+        assert_eq!(decode_entities("&notanentity;").as_ref(), "&notanentity;");
+        assert_eq!(decode_entities("plain text").as_ref(), "plain text");
+    }
+
+    #[test]
+    fn borrows_when_no_entities() {
+        assert!(matches!(
+            decode_entities("plain text"),
+            std::borrow::Cow::Borrowed(_)
+        ));
+        assert!(matches!(
+            decode_entities("12345"),
+            std::borrow::Cow::Borrowed(_)
+        ));
+        // 엔티티가 있으면 Owned
+        assert!(matches!(
+            decode_entities("a &lt; b"),
+            std::borrow::Cow::Owned(_)
+        ));
     }
 
     const PANDAS_HTML: &str = r#"<table border="1" class="dataframe"><thead><tr style="text-align: right;"><th></th><th>name</th><th>age</th></tr></thead><tbody><tr><th>0</th><td>Alice</td><td>30</td></tr><tr><th>1</th><td>Bob</td><td>25</td></tr></tbody></table>"#;
