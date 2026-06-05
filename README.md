@@ -132,6 +132,21 @@ That is the full surface. Anything not on a flag is auto-detected from the envir
 `--theme` and `--width` also read `NBV_THEME` / `NBV_WIDTH` from the environment when the flag is absent, so you can `export` them once per shell.
 `--plain` forces `--no-color` and `--no-images` so the output is a stable text stream suitable for piping into an LLM or `grep`. `--code-only` implies `--no-output`.
 
+## Beyond Previewing — Writing with LLMs
+
+**nbv** is too good to use just as a visual previewer. If you run it with the `--plain` option, it strips away the colors and images, converting your notebook into clean, pure text—which is **perfect for feeding into an LLM**. (Raw `.ipynb` files are a mess of JSON syntax; pasting them directly wastes precious tokens and confuses the AI.)
+
+* **Want the AI to analyze the whole notebook?**
+Copy the output of `nbv --plain analysis.ipynb` and paste it into ChatGPT or Claude. You can get instant answers with simple prompts like, *"What is this notebook analyzing?"* or *"Give me a summary."*
+* **Need a review for just your code?**
+Use `nbv --code-only analysis.ipynb` to extract only the code cells and ask, *"Help me refactor this code to make it cleaner."* It filters out the Markdown and outputs, leaving you with nothing but pristine code.
+* **Want to ask about a specific section of a long notebook?**
+Slice out just the cells you need, like `nbv --cells 10-15 --plain analysis.ipynb`. This saves tokens and keeps the AI's response sharp and focused.
+* **Want your terminal AI agent (like Claude Code) to read it?**
+Instead of forcing it to digest raw `.ipynb` files, pipeline it through `nbv --plain`. It strips out the JSON noise and delivers only the core content.
+
+Depending on how you use it, the same tool can be a 'quick previewer' for one person, and a **'clean pipeline to pass notebooks to AI'** for another.
+
 ## Shell completion
 
 nbv ships completion scripts for bash, zsh, fish, powershell, and elvish via

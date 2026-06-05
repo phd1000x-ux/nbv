@@ -132,6 +132,17 @@ nbv mangen                                  # section-1 man 페이지 출력
 `--theme`, `--width` 는 플래그가 없으면 환경변수 `NBV_THEME` / `NBV_WIDTH` 도 읽기 때문에 셸에서 한 번 `export` 해두면 영속화된다.
 `--plain`은 `--no-color`와 `--no-images`를 강제하여 LLM 입력이나 `grep` 파이프에 안정적인 텍스트 스트림을 만든다. `--code-only`는 `--no-output`을 함의한다.
 
+## 미리보기, 그 이상 — LLM과 함께 쓰기
+
+**nbv**는 눈으로 보는 미리보기로만 쓰기엔 좀 아까워요. `--plain` 옵션을 붙이면 노트북을 색도 이미지도 없는 깔끔한 텍스트로 뽑아주는데, 이게 LLM에게 먹이기 딱 좋거든요. (`.ipynb` 원본은 JSON 범벅이라 그대로 붙여넣으면 토큰만 잡아먹고 AI도 헷갈려 합니다.)
+
+* **노트북을 통째로 AI에게 물어보고 싶다면** — `nbv --plain analysis.ipynb` 결과를 복사해 ChatGPT나 Claude에 붙여넣어 보세요. *"이 노트북이 뭘 분석한 거야?"*, *"요약해줘"* 한 방에 됩니다.
+* **흩어진 코드만 리뷰받고 싶다면** — `nbv --code-only analysis.ipynb`로 코드 셀만 쏙 뽑아서 *"더 깔끔하게 고쳐줘"*라고 해보세요. 마크다운·출력은 빠지고 코드만 깔끔하게 갑니다.
+* **긴 노트북에서 일부만 묻고 싶다면** — `nbv --cells 10-15 --plain analysis.ipynb`처럼 필요한 셀 구간만 잘라서 활용해 보세요. 토큰도 아끼고, 답도 더 정확해집니다.
+* **터미널 AI 에이전트(Claude Code 같은)에게 읽히고 싶다면** — `.ipynb`를 직접 읽히는 대신 `nbv --plain`을 거치게 해보세요. JSON 잡음 없이 핵심만 전달됩니다.
+
+같은 도구라도, 누군가에겐 '빠른 미리보기'이고 누군가에겐 **'AI에게 노트북을 건네는 깔끔한 통로'**가 됩니다.
+
 ## 쉘 자동완성
 
 nbv는 clap_complete를 통해 bash, zsh, fish, powershell, elvish 쉘의 자동완성 스크립트를 제공한다.
