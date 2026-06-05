@@ -9,7 +9,7 @@ pub mod png_info;
 pub trait ImageRenderer {
     fn render(
         &self,
-        png_bytes: &[u8],
+        b64: &str,
         cell_idx: usize,
         out_idx: usize,
         ctx: &RenderCtx,
@@ -18,7 +18,7 @@ pub trait ImageRenderer {
 }
 
 pub fn dispatch(
-    png_bytes: &[u8],
+    b64: &str,
     cell_idx: usize,
     out_idx: usize,
     ctx: &RenderCtx,
@@ -26,10 +26,10 @@ pub fn dispatch(
 ) -> io::Result<()> {
     use crate::env::ImageBackend;
     match ctx.image_backend {
-        ImageBackend::Kitty => kitty::KittyRenderer.render(png_bytes, cell_idx, out_idx, ctx, w),
-        ImageBackend::ITerm2 => iterm::ITermRenderer.render(png_bytes, cell_idx, out_idx, ctx, w),
+        ImageBackend::Kitty => kitty::KittyRenderer.render(b64, cell_idx, out_idx, ctx, w),
+        ImageBackend::ITerm2 => iterm::ITermRenderer.render(b64, cell_idx, out_idx, ctx, w),
         ImageBackend::Placeholder => {
-            placeholder::PlaceholderRenderer.render(png_bytes, cell_idx, out_idx, ctx, w)
+            placeholder::PlaceholderRenderer.render(b64, cell_idx, out_idx, ctx, w)
         }
     }
 }
@@ -52,8 +52,9 @@ mod dispatch_tests {
     #[test]
     fn placeholder_dispatches_to_placeholder() {
         let mut buf = Vec::new();
+        // "Z2FyYmFnZQ==" decodes to b"garbage" — valid base64, non-PNG
         dispatch(
-            b"garbage",
+            "Z2FyYmFnZQ==",
             0,
             0,
             &ctx_with(ImageBackend::Placeholder),
@@ -66,18 +67,16 @@ mod dispatch_tests {
 
     #[test]
     fn kitty_dispatches_to_kitty() {
-        let png = b"\x89PNG\r\n\x1a\nfake".to_vec();
         let mut buf = Vec::new();
-        dispatch(&png, 0, 0, &ctx_with(ImageBackend::Kitty), &mut buf).unwrap();
+        dispatch("Zm9v", 0, 0, &ctx_with(ImageBackend::Kitty), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.starts_with("\x1b_G"));
     }
 
     #[test]
     fn iterm2_dispatches_to_iterm() {
-        let png = b"\x89PNG\r\n\x1a\nfake".to_vec();
         let mut buf = Vec::new();
-        dispatch(&png, 0, 0, &ctx_with(ImageBackend::ITerm2), &mut buf).unwrap();
+        dispatch("Zm9v", 0, 0, &ctx_with(ImageBackend::ITerm2), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.starts_with("\x1b]1337;"));
     }

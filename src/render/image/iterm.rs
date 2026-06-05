@@ -1,4 +1,3 @@
-use base64::Engine;
 use std::io::{self, Write};
 
 use crate::env::RenderCtx;
@@ -9,13 +8,12 @@ pub struct ITermRenderer;
 impl ImageRenderer for ITermRenderer {
     fn render(
         &self,
-        png_bytes: &[u8],
+        b64: &str,
         _cell_idx: usize,
         _out_idx: usize,
         _ctx: &RenderCtx,
         w: &mut dyn Write,
     ) -> io::Result<()> {
-        let b64 = base64::engine::general_purpose::STANDARD.encode(png_bytes);
         writeln!(w, "\x1b]1337;File=inline=1:{}\x07", b64)
     }
 }
@@ -38,12 +36,12 @@ mod tests {
 
     #[test]
     fn emits_osc_1337_with_base64() {
-        let png = b"\x89PNG\r\n\x1a\nfake".to_vec();
+        let b64 = "iVBORw0KGgoAAAANS";
         let mut buf = Vec::new();
-        ITermRenderer.render(&png, 0, 0, &ctx(), &mut buf).unwrap();
+        ITermRenderer.render(b64, 0, 0, &ctx(), &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.starts_with("\x1b]1337;File=inline=1"));
-        assert!(s.contains(":"));
+        assert!(s.contains(b64)); // pass-through verbatim
         assert!(s.contains("\x07"));
     }
 }

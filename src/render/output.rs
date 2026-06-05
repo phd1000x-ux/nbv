@@ -1,4 +1,3 @@
-use base64::Engine;
 use std::io::{self, Write};
 
 use crate::env::RenderCtx;
@@ -64,10 +63,7 @@ fn render_bundle(
         let label = out_label(exec_count, "image/png");
         let label = theme::colorize_output_header(&label, ctx.use_color);
         frame::open(&label, ctx, w)?;
-        match base64::engine::general_purpose::STANDARD.decode(b64) {
-            Ok(bytes) => image::dispatch(&bytes, cell_idx, out_idx, ctx, w)?,
-            Err(_) => frame::wrap_line("(image decode failed)", ctx, w)?,
-        }
+        image::dispatch(b64, cell_idx, out_idx, ctx, w)?;
         frame::close(ctx, w)?;
         return Ok(());
     }

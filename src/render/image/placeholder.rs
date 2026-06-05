@@ -1,3 +1,4 @@
+use base64::Engine;
 use std::io::{self, Write};
 
 use crate::env::RenderCtx;
@@ -9,15 +10,19 @@ pub struct PlaceholderRenderer;
 impl ImageRenderer for PlaceholderRenderer {
     fn render(
         &self,
-        png_bytes: &[u8],
+        b64: &str,
         cell_idx: usize,
         out_idx: usize,
         ctx: &RenderCtx,
         w: &mut dyn Write,
     ) -> io::Result<()> {
-        let (size_label, kb) = match png_info::dimensions(png_bytes) {
-            Some((wd, ht)) => (format!("PNG {}×{}", wd, ht), png_bytes.len() / 1024),
-            None => ("image (unknown format)".to_string(), png_bytes.len() / 1024),
+        let bytes = match base64::engine::general_purpose::STANDARD.decode(b64) {
+            Ok(b) => b,
+            Err(_) => return frame::wrap_line("(image decode failed)", ctx, w),
+        };
+        let (size_label, kb) = match png_info::dimensions(&bytes) {
+            Some((wd, ht)) => (format!("PNG {}×{}", wd, ht), bytes.len() / 1024),
+            None => ("image (unknown format)".to_string(), bytes.len() / 1024),
         };
         let line1 = format!("🖼  {}  ({} KB)", size_label, kb);
         let line2 = format!("   cell #{}, output #{}", cell_idx, out_idx);
@@ -32,7 +37,6 @@ mod tests {
     use super::*;
     use crate::env::{ImageBackend, RenderCtx};
     use crate::render::image::ImageRenderer;
-    use base64::Engine;
 
     const ONE_PIXEL: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
 
@@ -48,12 +52,9 @@ mod tests {
 
     #[test]
     fn shows_dimensions_for_valid_png() {
-        let b = base64::engine::general_purpose::STANDARD
-            .decode(ONE_PIXEL)
-            .unwrap();
         let mut buf = Vec::new();
         PlaceholderRenderer
-            .render(&b, 3, 0, &ctx(), &mut buf)
+            .render(ONE_PIXEL, 3, 0, &ctx(), &mut buf)
             .unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("1×1") || s.contains("1x1") || s.contains("1") && s.contains("PNG"));
@@ -61,12 +62,24 @@ mod tests {
     }
 
     #[test]
-    fn falls_back_when_png_invalid() {
+    fn unknown_format_for_valid_base64_non_png() {
+        // "Z2FyYmFnZQ==" → b"garbage" (유효 base64, PNG 아님)
         let mut buf = Vec::new();
         PlaceholderRenderer
-            .render(b"garbage", 0, 0, &ctx(), &mut buf)
+            .render("Z2FyYmFnZQ==", 0, 0, &ctx(), &mut buf)
             .unwrap();
         let s = String::from_utf8(buf).unwrap();
-        assert!(s.contains("unknown format") || s.contains("PNG"));
+        assert!(s.contains("unknown format"));
+    }
+
+    #[test]
+    fn decode_failed_for_invalid_base64() {
+        // '!' 와 '-' 는 STANDARD base64 알파벳이 아님 → decode 실패
+        let mut buf = Vec::new();
+        PlaceholderRenderer
+            .render("!!!not-base64!!!", 0, 0, &ctx(), &mut buf)
+            .unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("image decode failed"));
     }
 }
