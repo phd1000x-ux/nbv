@@ -78,6 +78,20 @@ fn truncate_cell(s: &str, width: usize) -> String {
     out
 }
 
+/// Push `n` ASCII spaces onto `out` without an intermediate `" ".repeat(n)`
+/// allocation. Mirrors `frame::write_spaces` for the String-building path.
+fn push_spaces(out: &mut String, n: usize) {
+    const SPACES: &str = "                                "; // 32 ASCII spaces
+    let mut remaining = n;
+    while remaining >= SPACES.len() {
+        out.push_str(SPACES);
+        remaining -= SPACES.len();
+    }
+    if remaining > 0 {
+        out.push_str(&SPACES[..remaining]);
+    }
+}
+
 /// Pad `s` to exactly `width` display columns according to `align`.
 /// Assumes `s` already fits within `width` (caller truncates first).
 fn pad_cell(s: &str, width: usize, align: Align) -> String {
@@ -86,15 +100,24 @@ fn pad_cell(s: &str, width: usize, align: Align) -> String {
         return s.to_string();
     }
     let pad = width - w;
+    let mut out = String::with_capacity(s.len() + pad);
     match align {
-        Align::Left => format!("{}{}", s, " ".repeat(pad)),
-        Align::Right => format!("{}{}", " ".repeat(pad), s),
+        Align::Left => {
+            out.push_str(s);
+            push_spaces(&mut out, pad);
+        }
+        Align::Right => {
+            push_spaces(&mut out, pad);
+            out.push_str(s);
+        }
         Align::Center => {
             let left = pad / 2;
-            let right = pad - left;
-            format!("{}{}{}", " ".repeat(left), s, " ".repeat(right))
+            push_spaces(&mut out, left);
+            out.push_str(s);
+            push_spaces(&mut out, pad - left);
         }
     }
+    out
 }
 
 /// Largest natural width a single column is allowed before shrinking kicks in.
@@ -334,6 +357,24 @@ mod tests {
         assert_eq!(pad_cell("ab", 5, Align::Left), "ab   ");
         assert_eq!(pad_cell("ab", 5, Align::Right), "   ab");
         assert_eq!(pad_cell("ab", 5, Align::Center), " ab  ");
+    }
+
+    #[test]
+    fn pad_cell_spans_chunk_boundary() {
+        // 70-col pad exceeds the 32-byte SPACES chunk, exercising the loop +
+        // remainder split in push_spaces. Output stays exactly `width` wide.
+        let out = pad_cell("x", 70, Align::Left);
+        assert_eq!(UnicodeWidthStr::width(out.as_str()), 70);
+        assert_eq!(out, format!("x{}", " ".repeat(69)));
+        assert_eq!(
+            pad_cell("x", 70, Align::Right),
+            format!("{}x", " ".repeat(69))
+        );
+        // Center: 69 pad -> 34 left, 35 right
+        assert_eq!(
+            pad_cell("x", 70, Align::Center),
+            format!("{}x{}", " ".repeat(34), " ".repeat(35))
+        );
     }
 
     #[test]
