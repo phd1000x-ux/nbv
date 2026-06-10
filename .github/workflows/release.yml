@@ -52,6 +52,49 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
 
+  release-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    # Native ARM64 runner builds the aarch64 musl binary. Like release-macos,
+    # it needs release-linux so the release (and its generated notes) already
+    # exist — this job only attaches its asset and avoids a parallel create race.
+    needs: release-linux
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Install musl-tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: aarch64-unknown-linux-musl
+          cache: false
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: linux-musl-aarch64
+      - name: Build
+        run: cargo build --release --target aarch64-unknown-linux-musl
+      - name: Package
+        id: pkg
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          NAME="nbv-${TAG}-aarch64-unknown-linux-musl.tar.gz"
+          tar -czf "$NAME" -C target/aarch64-unknown-linux-musl/release nbv
+          sha256sum "$NAME" > "$NAME.sha256"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.pkg.outputs.tag }}
+          files: |
+            ${{ steps.pkg.outputs.name }}
+            ${{ steps.pkg.outputs.name }}.sha256
+          fail_on_unmatched_files: true
+
   release-macos:
     runs-on: macos-14
     # Run after the Linux job so the release (and its generated notes) already

@@ -87,6 +87,15 @@ curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-x86
   | tar -xz -C /usr/local/bin
 ```
 
+**Prebuilt 바이너리 (Linux aarch64/ARM64, static musl):**
+
+```bash
+TAG=$(curl -fsSL https://api.github.com/repos/phd1000x-ux/nbv/releases/latest \
+  | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-aarch64-unknown-linux-musl.tar.gz" \
+  | tar -xz -C /usr/local/bin
+```
+
 **소스에서 빌드:**
 
 ```bash
