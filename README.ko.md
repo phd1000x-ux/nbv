@@ -67,7 +67,7 @@ brew install phd1000x-ux/tap/nbv
 cargo install nbv
 ```
 
-> **Windows에서는?** 네이티브 Windows 빌드는 아직 지원하지 않지만, **WSL**(Windows Subsystem for Linux)에서는 수정 없이 그대로 돌아간다. WSL 배포판 안에 Rust를 설치한 뒤 위의 `cargo install nbv`를 그대로 실행하면 된다.
+> **Windows에서는?** 네이티브 Windows를 지원한다 — 위의 `cargo install nbv`가 PowerShell이나 cmd에서 그대로 동작하고, 아래 prebuilt `.zip`도 있다. (**WSL**에서도 여전히 수정 없이 돌아간다.) 렌더링은 **Windows Terminal**이나 PowerShell 7에서 가장 깔끔하다.
 
 **Prebuilt 바이너리 (macOS arm64):**
 
@@ -94,6 +94,15 @@ TAG=$(curl -fsSL https://api.github.com/repos/phd1000x-ux/nbv/releases/latest \
   | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-aarch64-unknown-linux-musl.tar.gz" \
   | tar -xz -C /usr/local/bin
+```
+
+**Prebuilt 바이너리 (Windows x86_64):** PowerShell에서 실행:
+
+```powershell
+$TAG = (Invoke-RestMethod https://api.github.com/repos/phd1000x-ux/nbv/releases/latest).tag_name
+Invoke-WebRequest "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-x86_64-pc-windows-msvc.zip" -OutFile nbv.zip
+Expand-Archive nbv.zip -DestinationPath . -Force
+# nbv.exe를 PATH에 있는 디렉터리로 옮긴다
 ```
 
 **소스에서 빌드:**

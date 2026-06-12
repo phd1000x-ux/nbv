@@ -67,7 +67,7 @@ brew install phd1000x-ux/tap/nbv
 cargo install nbv
 ```
 
-> **On Windows?** Native Windows builds aren't supported yet, but nbv runs unmodified under **WSL** (Windows Subsystem for Linux) — install Rust inside your WSL distro and run the `cargo install nbv` above.
+> **On Windows?** Native Windows is supported — `cargo install nbv` above works in PowerShell or cmd, or grab the prebuilt `.zip` below. (nbv also still runs unmodified under **WSL**.) For the best rendering, use **Windows Terminal** or PowerShell 7.
 
 **Prebuilt binary (macOS arm64):**
 
@@ -94,6 +94,15 @@ TAG=$(curl -fsSL https://api.github.com/repos/phd1000x-ux/nbv/releases/latest \
   | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-aarch64-unknown-linux-musl.tar.gz" \
   | tar -xz -C /usr/local/bin
+```
+
+**Prebuilt binary (Windows x86_64):** run in PowerShell:
+
+```powershell
+$TAG = (Invoke-RestMethod https://api.github.com/repos/phd1000x-ux/nbv/releases/latest).tag_name
+Invoke-WebRequest "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-x86_64-pc-windows-msvc.zip" -OutFile nbv.zip
+Expand-Archive nbv.zip -DestinationPath . -Force
+# then move nbv.exe to a directory on your PATH
 ```
 
 **From source:**
