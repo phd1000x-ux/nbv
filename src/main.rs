@@ -11,6 +11,7 @@ use nbv::render;
 use nbv::setup;
 
 fn main() -> ExitCode {
+    #[cfg(unix)]
     install_sigpipe_handler();
     let args = Args::parse();
 
@@ -139,6 +140,7 @@ where
     }
 }
 
+#[cfg(unix)]
 fn install_sigpipe_handler() {
     // SIGPIPE를 받으면 즉시 0으로 종료 (e.g. `nbv x.ipynb | head`)
     use signal_hook::consts::SIGPIPE;

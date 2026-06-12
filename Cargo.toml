@@ -27,6 +27,8 @@ pulldown-cmark = { version = "0.10", default-features = false }
 crossterm = "0.29"
 base64 = "0.22"
 unicode-width = "0.2"
+
+[target.'cfg(unix)'.dependencies]
 signal-hook = "0.4"
 
 [dev-dependencies]
