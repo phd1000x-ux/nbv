@@ -98,14 +98,7 @@ curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-aar
   | tar -xz -C /usr/local/bin
 ```
 
-**Prebuilt 바이너리 (Windows x86_64):** PowerShell에서 실행:
-
-```powershell
-$TAG = (Invoke-RestMethod https://api.github.com/repos/phd1000x-ux/nbv/releases/latest).tag_name
-Invoke-WebRequest "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-x86_64-pc-windows-msvc.zip" -OutFile nbv.zip
-Expand-Archive nbv.zip -DestinationPath . -Force
-# nbv.exe를 PATH에 있는 디렉터리로 옮긴다
-```
+**Prebuilt 바이너리 (Windows x86_64):** [최신 릴리스](https://github.com/phd1000x-ux/nbv/releases/latest)에서 `nbv-<버전>-x86_64-pc-windows-msvc.zip`을 받아 압축을 풀고 `nbv.exe`를 실행하면 된다. 아무 디렉터리에서나 `nbv`를 부르려면 `nbv.exe`를 `PATH`에 있는 폴더로 옮기면 된다.
 
 **소스에서 빌드:**
 

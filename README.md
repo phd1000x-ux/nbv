@@ -98,14 +98,7 @@ curl -fL "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-aar
   | tar -xz -C /usr/local/bin
 ```
 
-**Prebuilt binary (Windows x86_64):** run in PowerShell:
-
-```powershell
-$TAG = (Invoke-RestMethod https://api.github.com/repos/phd1000x-ux/nbv/releases/latest).tag_name
-Invoke-WebRequest "https://github.com/phd1000x-ux/nbv/releases/download/$TAG/nbv-$TAG-x86_64-pc-windows-msvc.zip" -OutFile nbv.zip
-Expand-Archive nbv.zip -DestinationPath . -Force
-# then move nbv.exe to a directory on your PATH
-```
+**Prebuilt binary (Windows x86_64):** download `nbv-<version>-x86_64-pc-windows-msvc.zip` from the [latest release](https://github.com/phd1000x-ux/nbv/releases/latest), unzip it, and run `nbv.exe`. To call `nbv` from any directory, move `nbv.exe` to a folder on your `PATH`.
 
 **From source:**
 
