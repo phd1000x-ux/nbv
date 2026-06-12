@@ -13,6 +13,11 @@ use nbv::setup;
 fn main() -> ExitCode {
     #[cfg(unix)]
     install_sigpipe_handler();
+    // On Windows, enable VT processing so the raw ANSI escapes nbv emits render
+    // as color even on legacy consoles (cmd.exe). This is a documented side
+    // effect of crossterm's supports_ansi(); the return value is irrelevant.
+    #[cfg(windows)]
+    let _ = crossterm::ansi_support::supports_ansi();
     let args = Args::parse();
 
     match args.command {
