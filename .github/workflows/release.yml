@@ -159,3 +159,43 @@ jobs:
             ${{ steps.pkg.outputs.name }}
             ${{ steps.pkg.outputs.name }}.sha256
           fail_on_unmatched_files: true
+
+  release-windows:
+    runs-on: windows-latest
+    # Run after the Linux job so the release (and its generated notes) already
+    # exists; this job only attaches the Windows asset and avoids a create race.
+    needs: release-linux
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-pc-windows-msvc
+          cache: false
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-msvc-x86_64
+      - name: Build
+        run: cargo build --release --target x86_64-pc-windows-msvc
+      - name: Package
+        id: pkg
+        shell: pwsh
+        run: |
+          $TAG = "${{ inputs.tag || github.ref_name }}"
+          $NAME = "nbv-$TAG-x86_64-pc-windows-msvc.zip"
+          Compress-Archive -Path target/x86_64-pc-windows-msvc/release/nbv.exe -DestinationPath $NAME
+          $hash = (Get-FileHash $NAME -Algorithm SHA256).Hash.ToLower()
+          "$hash  $NAME" | Out-File -Encoding ascii -NoNewline "$NAME.sha256"
+          "name=$NAME" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "tag=$TAG"   | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.pkg.outputs.tag }}
+          files: |
+            ${{ steps.pkg.outputs.name }}
+            ${{ steps.pkg.outputs.name }}.sha256
+          fail_on_unmatched_files: true
