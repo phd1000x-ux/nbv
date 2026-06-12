@@ -126,6 +126,10 @@ fn setup_subcommand_help_works() {
     );
 }
 
+// `setup` is a unix-only feature (it writes shell rc files for zsh/bash/fish),
+// and this test joins PATH with the unix `:` separator. Not meaningful on Windows,
+// where `nbv setup` is intentionally unsupported.
+#[cfg(unix)]
 #[test]
 fn setup_idempotent_when_bin_dir_already_in_path() {
     let bin_dir = std::path::Path::new(BIN)
