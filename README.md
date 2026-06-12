@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://crates.io/crates/nbv"><img src="https://img.shields.io/crates/v/nbv.svg" alt="crates.io"></a>
   <a href="https://github.com/phd1000x-ux/nbv/releases"><img src="https://img.shields.io/github/v/release/phd1000x-ux/nbv" alt="GitHub release"></a>
+  <a href="#install"><img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue" alt="platforms: macOS | Linux | Windows"></a>
   <a href="LICENSE"><img src="https://img.shields.io/crates/l/nbv.svg" alt="MIT License"></a>
 </p>
 
@@ -47,6 +48,7 @@ Want to try it on a real notebook right after cloning? `nbv sample.ipynb` ships 
 
 - **Fast.** Per-cell stdout flush — first cell visible in milliseconds, even on 200-cell notebooks (<200 ms total).
 - **Single binary.** ~3 MB, no runtime dependencies, no Python required.
+- **Cross-platform.** One static binary for macOS (Apple Silicon), Linux (x86_64 + ARM64), and **now Windows** — `cargo install nbv` or grab a prebuilt from Releases.
 - **Inline images.** Ghostty and iTerm2 graphics protocols supported natively. Other terminals get a placeholder box with PNG dimensions.
 - **Smart defaults.** Auto-detects TTY, terminal program, and color support. No environment variables needed.
 - **Pipe-safe.** Detects non-TTY and degrades gracefully. `nbv x.ipynb | less -R` works; `SIGPIPE` from `| head` exits 0 cleanly.
@@ -185,7 +187,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # then `man nbv`
 
 ## What gets rendered
 
-| ipynb element | v0.6 behavior |
+| ipynb element | v0.7 behavior |
 | --- | --- |
 | Markdown cells | Headers (H1–H6), lists, blockquotes, inline code, fenced code blocks (highlighted via syntect), bold/italic, link text, GFM tables |
 | Code cells | Syntect highlighting using the notebook's kernel language (defaults to Python) |
@@ -196,7 +198,7 @@ nbv mangen | gzip > /usr/local/share/man/man1/nbv.1.gz   # then `man nbv`
 | Stream `stdout`/`stderr` | Plain text inside its own cell box, labeled |
 | Unknown cell or output type | Skipped with a `(skipped)` placeholder and a one-line stderr warning; rendering continues |
 
-Not yet in v0.6: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
+Not yet in v0.7: math (LaTeX), interactive widgets, JPEG/SVG images, application/json pretty-printing.
 
 Box borders may misalign around Braille art (U+2800–U+28FF) because the Unicode standard reports width 1 while most monospaced fonts render those glyphs at 2 cells — nbv follows the standard.
 
@@ -209,6 +211,8 @@ Box borders may misalign around Braille art (U+2800–U+28FF) because the Unicod
 | kitty | ✓ | ✓ |
 | Terminal.app | ✓ | placeholder |
 | Alacritty | ✓ | placeholder |
+| Windows Terminal / PowerShell 7 | ✓ | placeholder |
+| Windows cmd.exe | ✓ (VT auto-enabled) | placeholder |
 | tmux (any) | ✓ | placeholder (passthrough on roadmap) |
 | Pipe / non-TTY | (respects `NO_COLOR`) | placeholder |
 
