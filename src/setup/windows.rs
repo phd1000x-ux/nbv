@@ -32,11 +32,18 @@ fn persist_command(bin_dir: &Path) -> Command {
     c
 }
 
+/// Escape a string for embedding inside a PowerShell single-quoted literal
+/// (a literal `'` is written as `''`). Used only for the copy-paste hints.
+fn ps_single_quoted(s: &str) -> String {
+    s.replace('\'', "''")
+}
+
 fn print_manual_fallback(bin_dir: &Path) {
+    let dir_lit = ps_single_quoted(&bin_dir.display().to_string());
     eprintln!("Add it manually in PowerShell:");
     eprintln!(
         "    [Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path','User') + ';{}', 'User')",
-        bin_dir.display()
+        dir_lit
     );
 }
 
@@ -68,11 +75,12 @@ pub fn run(yes: bool) -> i32 {
 
     match persist_command(&bin_dir).status() {
         Ok(s) if s.success() => {
+            let dir_lit = ps_single_quoted(&bin_dir.display().to_string());
             println!();
             println!("Added to your user PATH. Open a NEW terminal to pick it up.");
             println!();
             println!("To activate it in THIS terminal right now, run:");
-            println!("    $env:Path += ';{}'", bin_dir.display());
+            println!("    $env:Path += ';{}'", dir_lit);
             0
         }
         Ok(s) => {
@@ -94,6 +102,14 @@ pub fn run(yes: bool) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn ps_single_quoted_doubles_quotes() {
+        assert_eq!(ps_single_quoted(r"C:\nbv\bin"), r"C:\nbv\bin");
+        assert_eq!(ps_single_quoted("a'b"), "a''b");
+        assert_eq!(ps_single_quoted("o'br'ien"), "o''br''ien");
+    }
 
     #[test]
     fn ps_persist_has_expected_shape() {
