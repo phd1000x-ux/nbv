@@ -114,7 +114,7 @@ cargo install --path .
 ~/.cargo/bin/nbv setup
 ```
 
-(아직 `nbv`가 `PATH`에 없으니 풀패스로 호출 — 그게 바로 해결하려는 문제니까.) `setup`은 셸(zsh / bash / fish)을 감지해서 rc 파일에 추가할 한 줄을 보여주고 y/N로 확인받는다. 적용 후엔 현재 터미널에서 즉시 활성화할 수 있는 한 줄도 같이 출력해준다 — zsh/bash는 `export PATH=…`, fish는 `fish_add_path …`. 또는 새 터미널을 열어도 된다. 확인 프롬프트 건너뛰려면 `--yes`.
+(아직 `nbv`가 `PATH`에 없으니 풀패스로 호출 — 그게 바로 해결하려는 문제니까.) `setup`은 셸(zsh / bash / fish)을 감지해서 rc 파일에 추가할 한 줄을 보여주고 y/N로 확인받는다. 적용 후엔 현재 터미널에서 즉시 활성화할 수 있는 한 줄도 같이 출력해준다 — zsh/bash는 `export PATH=…`, fish는 `fish_add_path …`. 또는 새 터미널을 열어도 된다. Windows에서는 셸 rc 파일 대신 PowerShell로 user `PATH`에 추가한다. 확인 프롬프트 건너뛰려면 `--yes`.
 
 ## 사용법
 
