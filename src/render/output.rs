@@ -58,33 +58,24 @@ fn render_bundle(
     ctx: &RenderCtx,
     w: &mut impl Write,
 ) -> io::Result<()> {
-    // 우선순위: image/png (백엔드 가능 시) → image/png (placeholder) → text/html (표로 파싱되면) → text/plain → 기타 placeholder
+    // 우선순위: image/png → text/html (표로 파싱되면) → text/plain → 기타 placeholder
     if let Some(b64) = &bundle.image_png {
-        let label = out_label(exec_count, "image/png");
-        let label = theme::colorize_output_header(&label, ctx.use_color);
-        frame::open(&label, ctx, w)?;
-        image::dispatch(b64, cell_idx, out_idx, ctx, w)?;
-        frame::close(ctx, w)?;
-        return Ok(());
+        return frame_section(&out_label(exec_count, "image/png"), ctx, w, |w| {
+            image::dispatch(b64, cell_idx, out_idx, ctx, w)
+        });
     }
     // text/html as a table (DataFrames): prefer it over the plain-text repr.
     if let Some(html) = &bundle.text_html {
         if let Some(parsed) = html_table::parse(html) {
-            let label = out_label(exec_count, "text/html");
-            let label = theme::colorize_output_header(&label, ctx.use_color);
-            frame::open(&label, ctx, w)?;
-            table::render(&parsed, ctx, w)?;
-            frame::close(ctx, w)?;
-            return Ok(());
+            return frame_section(&out_label(exec_count, "text/html"), ctx, w, |w| {
+                table::render(&parsed, ctx, w)
+            });
         }
     }
     if let Some(t) = &bundle.text_plain {
-        let label = out_label(exec_count, "text/plain");
-        let label = theme::colorize_output_header(&label, ctx.use_color);
-        frame::open(&label, ctx, w)?;
-        text::render(t, ctx, w)?;
-        frame::close(ctx, w)?;
-        return Ok(());
+        return frame_section(&out_label(exec_count, "text/plain"), ctx, w, |w| {
+            text::render(t, ctx, w)
+        });
     }
     // 기타 MIME: ipynb 권장 우선순위
     let priority = ["text/latex", "application/json"];
@@ -94,12 +85,26 @@ fn render_bundle(
         .map(|s| s.to_string())
         .or_else(|| bundle.other.keys().min().cloned());
     let mime = key.as_deref().unwrap_or("(empty)");
-    let label = out_label(exec_count, &format!("(unsupported: {mime})"));
-    let label = theme::colorize_output_header(&label, ctx.use_color);
+    frame_section(
+        &out_label(exec_count, &format!("(unsupported: {mime})")),
+        ctx,
+        w,
+        |w| frame::wrap_line("", ctx, w),
+    )
+}
+
+/// Open an output frame with a green header `label`, run `body`, then close the frame.
+/// Collapses the repeated open → content → close sequence used per MIME type.
+fn frame_section<W: Write>(
+    label: &str,
+    ctx: &RenderCtx,
+    w: &mut W,
+    body: impl FnOnce(&mut W) -> io::Result<()>,
+) -> io::Result<()> {
+    let label = theme::colorize_output_header(label, ctx.use_color);
     frame::open(&label, ctx, w)?;
-    frame::wrap_line("", ctx, w)?;
-    frame::close(ctx, w)?;
-    Ok(())
+    body(w)?;
+    frame::close(ctx, w)
 }
 
 fn header(label: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
