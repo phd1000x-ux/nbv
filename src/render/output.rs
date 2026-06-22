@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use crate::env::RenderCtx;
-use crate::ipynb::model::{MimeBundle, Output, StreamName};
+use crate::ipynb::model::{MimeBundle, Output};
 use crate::render::{frame, html_table, image, table, text, traceback};
 use crate::theme;
 
@@ -15,7 +15,7 @@ pub fn render(
 ) -> io::Result<()> {
     match out {
         Output::Stream { name, text: t } => {
-            let label = out_label(None, &format!("stream ({})", stream_label(name)));
+            let label = out_label(None, &format!("stream ({})", name.display_name()));
             header(&label, ctx, w)?;
             text::render(t, ctx, w)?;
             frame::close(ctx, w)?;
@@ -105,13 +105,6 @@ fn render_bundle(
 fn header(label: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
     let label = theme::colorize_output_header(label, ctx.use_color);
     frame::open(&label, ctx, w)
-}
-
-fn stream_label(name: &StreamName) -> &'static str {
-    match name {
-        StreamName::Stdout => "stdout",
-        StreamName::Stderr => "stderr",
-    }
 }
 
 /// Build an output box label. Outputs with a real execution count get

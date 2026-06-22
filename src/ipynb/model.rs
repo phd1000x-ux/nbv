@@ -82,6 +82,16 @@ pub enum StreamName {
     Stderr,
 }
 
+impl StreamName {
+    /// Lowercase stream label used in render output (`stdout` / `stderr`).
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            StreamName::Stdout => "stdout",
+            StreamName::Stderr => "stderr",
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct MimeBundle {
     pub text_plain: Option<String>,
@@ -283,5 +293,11 @@ mod tests {
         let nb: Notebook = serde_json::from_str(json).unwrap();
         let ks = nb.metadata.kernelspec.as_ref().unwrap();
         assert_eq!(ks.language.as_deref(), Some("python"));
+    }
+
+    #[test]
+    fn stream_name_display_name() {
+        assert_eq!(StreamName::Stdout.display_name(), "stdout");
+        assert_eq!(StreamName::Stderr.display_name(), "stderr");
     }
 }

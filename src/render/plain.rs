@@ -3,7 +3,7 @@ use std::ops::Range;
 
 use base64::Engine;
 
-use crate::ipynb::model::{Cell, Notebook, Output, StreamName};
+use crate::ipynb::model::{Cell, Notebook, Output};
 use crate::render::image::png_info;
 use crate::render::traceback::strip_ansi_pub as strip_ansi;
 
@@ -64,11 +64,7 @@ fn render_cell_plain(
 fn render_output_plain(out: &Output, first: &mut bool, w: &mut impl Write) -> io::Result<()> {
     match out {
         Output::Stream { name, text } => {
-            let prefix = match name {
-                StreamName::Stdout => "stdout",
-                StreamName::Stderr => "stderr",
-            };
-            emit_block(prefix, text, first, w)?;
+            emit_block(name.display_name(), text, first, w)?;
         }
         Output::ExecuteResult { data, .. } | Output::DisplayData { data } => {
             if let Some(b64) = &data.image_png {
