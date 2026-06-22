@@ -13,36 +13,29 @@ pub const FG_BLUE: &str = "\x1b[34m";
 pub const FG_YELLOW: &str = "\x1b[33m";
 pub const FG_MAGENTA: &str = "\x1b[35m";
 
-pub fn colorize_code_header(s: &str, color: bool) -> String {
+/// Wrap `s` in bold + `color_code` (then RESET) when `color` is on; otherwise return it plain.
+fn header(s: &str, color_code: &str, color: bool) -> String {
     if color {
-        format!("{}{}{}{}", BOLD, FG_CYAN, s, RESET)
+        format!("{}{}{}{}", BOLD, color_code, s, RESET)
     } else {
         s.to_string()
     }
+}
+
+pub fn colorize_code_header(s: &str, color: bool) -> String {
+    header(s, FG_CYAN, color)
 }
 
 pub fn colorize_output_header(s: &str, color: bool) -> String {
-    if color {
-        format!("{}{}{}{}", BOLD, FG_GREEN, s, RESET)
-    } else {
-        s.to_string()
-    }
+    header(s, FG_GREEN, color)
 }
 
 pub fn colorize_error_header(s: &str, color: bool) -> String {
-    if color {
-        format!("{}{}{}{}", BOLD, FG_RED, s, RESET)
-    } else {
-        s.to_string()
-    }
+    header(s, FG_RED, color)
 }
 
 pub fn colorize_markdown_header(s: &str, color: bool) -> String {
-    if color {
-        format!("{}{}{}{}", BOLD, FG_BLUE, s, RESET)
-    } else {
-        s.to_string()
-    }
+    header(s, FG_BLUE, color)
 }
 
 pub fn dim(s: &str, color: bool) -> String {
