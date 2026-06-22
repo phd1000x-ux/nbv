@@ -125,18 +125,12 @@ fn out_label(exec_count: Option<u64>, mime: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env::{ImageBackend, RenderCtx};
+    use crate::env::RenderCtx;
     use crate::ipynb::model::{MimeBundle, Output, StreamName};
     use std::collections::HashMap;
 
     fn ctx_placeholder() -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color: false,
-            width: 60,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::base()
     }
 
     #[test]

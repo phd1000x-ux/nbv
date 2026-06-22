@@ -23,16 +23,10 @@ pub fn render(text: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env::{ImageBackend, RenderCtx};
+    use crate::env::RenderCtx;
 
     fn ctx() -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color: false,
-            width: 30,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::width(30)
     }
 
     #[test]

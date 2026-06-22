@@ -40,13 +40,7 @@ mod tests {
     use crate::render::image::ImageRenderer;
 
     fn ctx() -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color: false,
-            width: 60,
-            image_backend: ImageBackend::Kitty,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::backend(ImageBackend::Kitty)
     }
 
     #[test]

@@ -40,13 +40,7 @@ mod dispatch_tests {
     use crate::env::{ImageBackend, RenderCtx};
 
     fn ctx_with(b: ImageBackend) -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color: false,
-            width: 60,
-            image_backend: b,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::backend(b)
     }
 
     #[test]

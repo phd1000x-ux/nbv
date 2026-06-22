@@ -7,6 +7,8 @@ pub mod output;
 mod pad;
 pub mod plain;
 pub mod table;
+#[cfg(test)]
+pub(crate) mod test_support;
 pub mod text;
 pub mod traceback;
 
@@ -121,17 +123,10 @@ pub fn render_cell(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env::ImageBackend;
     use crate::ipynb::parse;
 
     fn ctx() -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color: false,
-            width: 60,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::base()
     }
 
     #[test]

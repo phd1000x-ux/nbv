@@ -35,19 +35,13 @@ impl ImageRenderer for PlaceholderRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env::{ImageBackend, RenderCtx};
+    use crate::env::RenderCtx;
     use crate::render::image::ImageRenderer;
 
     const ONE_PIXEL: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
 
     fn ctx() -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color: false,
-            width: 60,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::base()
     }
 
     #[test]

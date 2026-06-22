@@ -88,25 +88,16 @@ fn sanitize_invisible_fg(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env::{ImageBackend, RenderCtx};
+    use crate::env::RenderCtx;
 
     fn ctx(use_color: bool) -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color,
-            width: 60,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::color(use_color)
     }
 
     fn ctx_wide(use_color: bool) -> RenderCtx {
         RenderCtx {
-            is_tty: true,
-            use_color,
             width: 200,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
+            ..crate::render::test_support::color(use_color)
         }
     }
 

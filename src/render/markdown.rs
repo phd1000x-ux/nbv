@@ -309,13 +309,7 @@ mod tests {
     use crate::env::{ImageBackend, RenderCtx};
 
     fn ctx(use_color: bool) -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color,
-            width: 60,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::color(use_color)
     }
 
     #[test]

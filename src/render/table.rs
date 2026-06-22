@@ -290,16 +290,10 @@ fn data_line(cells: &[String], bold: bool, ctx: &RenderCtx, w: &mut impl Write) 
 mod tests {
     use super::*;
 
-    use crate::env::{ImageBackend, RenderCtx};
+    use crate::env::RenderCtx;
 
     fn ctx(width: usize) -> RenderCtx {
-        RenderCtx {
-            is_tty: true,
-            use_color: false,
-            width,
-            image_backend: ImageBackend::Placeholder,
-            code_theme: "base16-ocean.dark".into(),
-        }
+        crate::render::test_support::width(width)
     }
 
     #[test]
