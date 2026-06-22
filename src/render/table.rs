@@ -4,6 +4,7 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::env::RenderCtx;
 use crate::render::frame;
+use crate::render::pad::push_spaces;
 use crate::theme;
 
 /// Per-column text alignment.
@@ -76,20 +77,6 @@ fn truncate_cell(s: &str, width: usize) -> String {
     }
     out.push('…');
     out
-}
-
-/// Push `n` ASCII spaces onto `out` without an intermediate `" ".repeat(n)`
-/// allocation. Mirrors `frame::write_spaces` for the String-building path.
-fn push_spaces(out: &mut String, n: usize) {
-    const SPACES: &str = "                                "; // 32 ASCII spaces
-    let mut remaining = n;
-    while remaining >= SPACES.len() {
-        out.push_str(SPACES);
-        remaining -= SPACES.len();
-    }
-    if remaining > 0 {
-        out.push_str(&SPACES[..remaining]);
-    }
 }
 
 /// Pad `s` to exactly `width` display columns according to `align`.

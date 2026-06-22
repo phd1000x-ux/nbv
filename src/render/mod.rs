@@ -4,6 +4,7 @@ pub mod html_table;
 pub mod image;
 pub mod markdown;
 pub mod output;
+mod pad;
 pub mod plain;
 pub mod table;
 pub mod text;
