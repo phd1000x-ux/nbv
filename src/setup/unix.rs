@@ -1,7 +1,10 @@
-use std::env;
+//! Unix `nbv setup`: append a `PATH` line to the user's shell rc file.
+
 use std::fs;
-use std::io::{self, BufRead, Write};
+use std::io;
 use std::path::{Path, PathBuf};
+
+use super::{binary_dir, confirm, path_already_includes};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ShellKind {
@@ -49,22 +52,12 @@ impl ShellKind {
     }
 }
 
-pub fn binary_dir() -> Option<PathBuf> {
-    env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-}
-
-pub fn path_already_includes(path_env: &str, dir: &Path) -> bool {
-    let dir_str = dir.to_string_lossy();
-    path_env.split(':').any(|p| p == dir_str)
-}
-
 pub fn rc_already_references(rc_content: &str, dir: &Path) -> bool {
     rc_content.contains(&*dir.to_string_lossy())
 }
 
 fn append_block(path: &Path, line: &str) -> io::Result<()> {
+    use std::io::Write;
     let needs_leading_newline = match fs::read_to_string(path) {
         Ok(c) => !c.is_empty() && !c.ends_with('\n'),
         Err(_) => false,
@@ -95,15 +88,15 @@ pub fn run(yes: bool) -> i32 {
         }
     };
 
-    let path_env = env::var("PATH").unwrap_or_default();
+    let path_env = std::env::var("PATH").unwrap_or_default();
     if path_already_includes(&path_env, &bin_dir) {
         println!("'{}' is already in PATH. Nothing to do.", bin_dir.display());
         return 0;
     }
 
-    let shell = env::var("SHELL").unwrap_or_default();
+    let shell = std::env::var("SHELL").unwrap_or_default();
     let kind = ShellKind::from_shell_path(&shell);
-    let home = match env::var("HOME") {
+    let home = match std::env::var("HOME") {
         Ok(h) => PathBuf::from(h),
         Err(_) => {
             eprintln!("nbv setup: HOME environment variable is not set");
@@ -168,20 +161,6 @@ pub fn run(yes: bool) -> i32 {
     println!("Or reload the config file:");
     println!("    source {}", rc.display());
     0
-}
-
-fn confirm() -> bool {
-    print!("Apply? [y/N] ");
-    if io::stdout().flush().is_err() {
-        return false;
-    }
-    let stdin = io::stdin();
-    let mut line = String::new();
-    if stdin.lock().read_line(&mut line).is_err() {
-        return false;
-    }
-    let t = line.trim().to_lowercase();
-    t == "y" || t == "yes"
 }
 
 #[cfg(test)]
@@ -255,14 +234,6 @@ mod tests {
             ShellKind::Fish.path_line(dir),
             "fish_add_path /u/.cargo/bin"
         );
-    }
-
-    #[test]
-    fn path_already_includes_exact_segment() {
-        assert!(path_already_includes("/foo:/bar:/baz", Path::new("/bar")));
-        assert!(path_already_includes("/bar", Path::new("/bar")));
-        assert!(!path_already_includes("/foo:/barz:/baz", Path::new("/bar")));
-        assert!(!path_already_includes("", Path::new("/bar")));
     }
 
     #[test]
