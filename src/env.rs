@@ -86,6 +86,22 @@ pub fn detect(
     )
 }
 
+/// Pick the image backend from terminal identity. Forced to `Placeholder` when
+/// images are disabled or output is not a TTY.
+fn detect_image_backend(env: &impl EnvProbe, no_images: bool, is_tty: bool) -> ImageBackend {
+    if no_images || !is_tty {
+        ImageBackend::Placeholder
+    } else if env.term_program().as_deref() == Some("ghostty")
+        || env.term().as_deref() == Some("xterm-kitty")
+    {
+        ImageBackend::Kitty
+    } else if env.term_program().as_deref() == Some("iTerm.app") {
+        ImageBackend::ITerm2
+    } else {
+        ImageBackend::Placeholder
+    }
+}
+
 pub fn detect_with(
     env: &impl EnvProbe,
     args_no_color: bool,
@@ -97,17 +113,7 @@ pub fn detect_with(
     let use_color = is_tty && !args_no_color && !env.no_color();
     let width = args_width.or_else(|| env.columns()).unwrap_or(80);
 
-    let image_backend = if args_no_images || !is_tty {
-        ImageBackend::Placeholder
-    } else if env.term_program().as_deref() == Some("ghostty")
-        || env.term().as_deref() == Some("xterm-kitty")
-    {
-        ImageBackend::Kitty
-    } else if env.term_program().as_deref() == Some("iTerm.app") {
-        ImageBackend::ITerm2
-    } else {
-        ImageBackend::Placeholder
-    };
+    let image_backend = detect_image_backend(env, args_no_images, is_tty);
 
     let code_theme = args_theme.unwrap_or_else(|| "base16-ocean.dark".to_string());
 

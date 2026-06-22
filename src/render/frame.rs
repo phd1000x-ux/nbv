@@ -8,6 +8,9 @@ use crate::theme;
 // content는 wrap_line이 RESET을 inject해 padding이 색을 물려받지 않도록 한다.
 // 박스선 자체에 별도 색을 입히면 상/하/좌/우가 균일하지 않게 보이는 문제가 있어 제거.
 
+/// Terminal hard-tab stop width (cursor jumps to the next multiple of this).
+const TAB_STOP: usize = 8;
+
 /// Visible display width, skipping ANSI CSI escape sequences (`\x1b[...<final>`).
 fn ansi_width(s: &str) -> usize {
     let mut w = 0usize;
@@ -96,7 +99,7 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
             // Tab은 unicode-width 기준 0이지만 터미널은 다음 8-col stop으로 cursor 점프.
             // 그대로 두면 visible width가 padding 계산보다 커져 박스 폭을 넘어 wrap된다.
             // content position 기준 8-col stop으로 spaces expand.
-            let to_add = (8 - (used % 8)).min(inner_w.saturating_sub(used));
+            let to_add = (TAB_STOP - (used % TAB_STOP)).min(inner_w.saturating_sub(used));
             if to_add == 0 {
                 break;
             }
