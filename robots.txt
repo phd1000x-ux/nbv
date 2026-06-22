@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://phd1000x-ux.github.io/nbv/sitemap.xml
