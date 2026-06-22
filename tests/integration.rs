@@ -126,31 +126,48 @@ fn setup_subcommand_help_works() {
     );
 }
 
-// `setup` is a unix-only feature (it writes shell rc files for zsh/bash/fish),
-// and this test joins PATH with the unix `:` separator. Not meaningful on Windows,
-// where `nbv setup` is intentionally unsupported.
-#[cfg(unix)]
-#[test]
-fn setup_idempotent_when_bin_dir_already_in_path() {
+// `nbv setup` has a per-OS idempotency check: if the binary's own directory is
+// already on PATH, it prints "already in PATH" and exits 0 without touching
+// anything. PATH is joined with the platform separator (':' unix, ';' Windows),
+// so each platform gets a thin test over the shared helper; the Windows path
+// never writes the registry.
+#[cfg(any(unix, windows))]
+fn assert_setup_idempotent_with_separator(sep: char) {
     let bin_dir = std::path::Path::new(BIN)
         .parent()
         .expect("BIN has a parent")
         .to_string_lossy()
         .into_owned();
-    let extra = format!("{}:{}", bin_dir, std::env::var("PATH").unwrap_or_default());
+    let extra = format!(
+        "{}{}{}",
+        bin_dir,
+        sep,
+        std::env::var("PATH").unwrap_or_default()
+    );
     let out = Command::new(BIN)
         .arg("setup")
         .env("PATH", extra)
         .output()
         .expect("run nbv setup");
     let stdout = String::from_utf8_lossy(&out.stdout);
-    let code = out.status.code().unwrap_or(-1);
-    assert_eq!(code, 0);
+    assert_eq!(out.status.code().unwrap_or(-1), 0);
     assert!(
         stdout.contains("already in PATH"),
         "expected idempotent message, got: {}",
         stdout
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn setup_idempotent_when_bin_dir_already_in_path() {
+    assert_setup_idempotent_with_separator(':');
+}
+
+#[cfg(windows)]
+#[test]
+fn setup_idempotent_when_bin_dir_already_in_path_windows() {
+    assert_setup_idempotent_with_separator(';');
 }
 
 #[test]
