@@ -12,7 +12,7 @@ use crate::theme;
 const TAB_STOP: usize = 8;
 
 /// Visible display width, skipping ANSI CSI escape sequences (`\x1b[...<final>`).
-fn ansi_width(s: &str) -> usize {
+pub(crate) fn ansi_width(s: &str) -> usize {
     let mut w = 0usize;
     let mut chars = s.chars();
     while let Some(c) = chars.next() {

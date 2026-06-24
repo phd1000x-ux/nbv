@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io;
 use std::sync::OnceLock;
 
 use syntect::easy::HighlightLines;
@@ -7,7 +7,7 @@ use syntect::parsing::SyntaxSet;
 use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 
 use crate::env::RenderCtx;
-use crate::render::frame;
+use crate::render::sink::LineSink;
 use crate::render::traceback::strip_ansi_pub as strip_ansi;
 
 static SYNTAX_SET: OnceLock<SyntaxSet> = OnceLock::new();
@@ -20,7 +20,12 @@ pub fn theme_set() -> &'static ThemeSet {
     THEME_SET.get_or_init(ThemeSet::load_defaults)
 }
 
-pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+pub fn render(
+    source: &str,
+    lang: &str,
+    ctx: &RenderCtx,
+    sink: &mut dyn LineSink,
+) -> io::Result<()> {
     let ss = syntax_set();
     let ts = theme_set();
     let syntax = ss
@@ -46,7 +51,7 @@ pub fn render(source: &str, lang: &str, ctx: &RenderCtx, w: &mut impl Write) -> 
         } else {
             strip_ansi(&escaped)
         };
-        frame::wrap_line(&to_render, ctx, w)?;
+        sink.raw_line(&to_render, ctx)?;
     }
     Ok(())
 }
@@ -104,7 +109,10 @@ mod tests {
     #[test]
     fn renders_python_code_with_color() {
         let mut buf = Vec::new();
-        render("x = 1", "python", &ctx_wide(true), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("x = 1", "python", &ctx_wide(true), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x"));
         assert!(s.contains("="));
@@ -115,7 +123,10 @@ mod tests {
     #[test]
     fn renders_code_without_color_strips_ansi() {
         let mut buf = Vec::new();
-        render("x = 1", "python", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("x = 1", "python", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(!s.contains("\x1b["));
         assert!(s.contains("x"));
@@ -131,9 +142,15 @@ mod tests {
         alt_ctx.code_theme = "InspiredGitHub".into();
 
         let mut default_buf = Vec::new();
-        render("x = 1", "python", &default_ctx, &mut default_buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut default_buf);
+            render("x = 1", "python", &default_ctx, &mut sink).unwrap();
+        }
         let mut alt_buf = Vec::new();
-        render("x = 1", "python", &alt_ctx, &mut alt_buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut alt_buf);
+            render("x = 1", "python", &alt_ctx, &mut sink).unwrap();
+        }
 
         assert!(default_buf.contains(&b'x'));
         assert!(alt_buf.contains(&b'x'));
@@ -143,7 +160,10 @@ mod tests {
     #[test]
     fn unknown_language_falls_back_to_plain() {
         let mut buf = Vec::new();
-        render("hello", "klingon-script", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("hello", "klingon-script", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("hello"));
     }
@@ -151,7 +171,10 @@ mod tests {
     #[test]
     fn each_line_emitted_as_box_line() {
         let mut buf = Vec::new();
-        render("a = 1\nb = 2", "python", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("a = 1\nb = 2", "python", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("a"));
         assert!(s.contains("b"));

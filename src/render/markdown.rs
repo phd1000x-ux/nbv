@@ -1,14 +1,15 @@
-use std::io::{self, Write};
+use std::io;
 
 use pulldown_cmark::{Alignment, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
 use crate::env::RenderCtx;
+use crate::render::code;
+use crate::render::sink::LineSink;
 use crate::render::table::{self, Align, Table};
-use crate::render::{code, frame};
 use crate::theme;
 
-/// 누적 텍스트 + 스타일을 frame::wrap_line으로 흘려보냄.
-pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+/// 누적 텍스트 + 스타일을 sink으로 흘려보냄.
+pub fn render(source: &str, ctx: &RenderCtx, sink: &mut dyn LineSink) -> io::Result<()> {
     let mut acc = String::new();
     let mut _style = Style::default();
     let mut list_stack: Vec<ListState> = Vec::new();
@@ -22,7 +23,7 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
     for ev in parser {
         match ev {
             Event::Start(Tag::Heading { level, .. }) => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
                 let n = heading_n(level);
                 let prefix = "#".repeat(n);
                 let header_text = format!("{} ", prefix);
@@ -36,12 +37,12 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 if ctx.use_color {
                     acc.push_str(theme::RESET);
                 }
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
                 _style = Style::default();
             }
             Event::Start(Tag::Paragraph) => {}
             Event::End(TagEnd::Paragraph) => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
             }
             Event::Start(Tag::Emphasis) => {
                 if ctx.use_color && !in_table_cell(&table) {
@@ -83,7 +84,7 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 }
             }
             Event::Start(Tag::CodeBlock(kind)) => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
                 let lang = match kind {
                     pulldown_cmark::CodeBlockKind::Fenced(l) => l.into_string(),
                     pulldown_cmark::CodeBlockKind::Indented => String::new(),
@@ -97,10 +98,10 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
             Event::End(TagEnd::CodeBlock) => {
                 let src = pending_code_block.take().unwrap_or_default();
                 let lang = pending_lang.take().unwrap_or_else(|| "text".into());
-                code::render(&src, &lang, ctx, w)?;
+                code::render(&src, &lang, ctx, sink)?;
             }
             Event::Start(Tag::List(start)) => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
                 list_stack.push(ListState { number: start });
             }
             Event::End(TagEnd::List(_)) => {
@@ -121,7 +122,7 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 }
             }
             Event::End(TagEnd::Item) => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
             }
             Event::Start(Tag::BlockQuote) => {
                 in_blockquote += 1;
@@ -143,16 +144,16 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
                 if let Some(cell) = table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
                     cell.push(' ');
                 } else {
-                    flush_line(&mut acc, in_blockquote, ctx, w)?;
+                    flush_line(&mut acc, in_blockquote, ctx, sink)?;
                 }
             }
             Event::Rule => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
-                let dashes = "─".repeat(ctx.width.saturating_sub(4));
-                frame::wrap_line(&dashes, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
+                let dashes = "─".repeat(ctx.width);
+                sink.raw_line(&dashes, ctx)?;
             }
             Event::Start(Tag::Table(aligns)) => {
-                flush_line(&mut acc, in_blockquote, ctx, w)?;
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
                 table = Some(TableBuilder::new(&aligns));
             }
             Event::Start(Tag::TableHead) | Event::Start(Tag::TableRow) => {
@@ -182,13 +183,13 @@ pub fn render(source: &str, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<(
             }
             Event::End(TagEnd::Table) => {
                 if let Some(t) = table.take() {
-                    table::render(&t.into_table(), ctx, w)?;
+                    table::render(&t.into_table(), ctx, sink)?;
                 }
             }
             _ => {}
         }
     }
-    flush_line(&mut acc, in_blockquote, ctx, w)?;
+    flush_line(&mut acc, in_blockquote, ctx, sink)?;
     Ok(())
 }
 
@@ -196,7 +197,7 @@ fn flush_line(
     acc: &mut String,
     quote_depth: u32,
     ctx: &RenderCtx,
-    w: &mut impl Write,
+    sink: &mut dyn LineSink,
 ) -> io::Result<()> {
     if acc.trim().is_empty() {
         acc.clear();
@@ -208,7 +209,7 @@ fn flush_line(
     } else {
         std::mem::take(acc)
     };
-    frame::wrap_line(&line, ctx, w)?;
+    sink.text_line(&line, ctx)?;
     acc.clear();
     Ok(())
 }
@@ -315,7 +316,10 @@ mod tests {
     #[test]
     fn heading_gets_hash_prefix() {
         let mut buf = Vec::new();
-        render("# Hello", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("# Hello", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("# Hello"));
     }
@@ -323,7 +327,10 @@ mod tests {
     #[test]
     fn h2_gets_two_hashes() {
         let mut buf = Vec::new();
-        render("## Hello", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("## Hello", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("## Hello"));
     }
@@ -331,7 +338,10 @@ mod tests {
     #[test]
     fn unordered_list_has_bullet() {
         let mut buf = Vec::new();
-        render("- one\n- two", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("- one\n- two", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("• one") || s.contains("- one"));
         assert!(s.contains("two"));
@@ -340,7 +350,10 @@ mod tests {
     #[test]
     fn ordered_list_has_numbers() {
         let mut buf = Vec::new();
-        render("1. one\n2. two", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("1. one\n2. two", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("1.") || s.contains("1)"));
         assert!(s.contains("two"));
@@ -349,7 +362,10 @@ mod tests {
     #[test]
     fn inline_code_preserved() {
         let mut buf = Vec::new();
-        render("use `foo()` here", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("use `foo()` here", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("foo()"));
     }
@@ -365,7 +381,10 @@ mod tests {
             image_backend: ImageBackend::Placeholder,
             code_theme: "base16-ocean.dark".into(),
         };
-        render("```python\nx = 1\n```", &ctx_wide, &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("```python\nx = 1\n```", &ctx_wide, &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x") && s.contains("="));
     }
@@ -373,7 +392,10 @@ mod tests {
     #[test]
     fn blockquote_has_prefix() {
         let mut buf = Vec::new();
-        render("> quoted", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("> quoted", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("> quoted") || s.contains("│ > quoted"));
     }
@@ -381,7 +403,10 @@ mod tests {
     #[test]
     fn bold_uses_ansi_when_color() {
         let mut buf = Vec::new();
-        render("**bold**", &ctx(true), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render("**bold**", &ctx(true), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("\x1b[1m") || s.contains("bold"));
     }
@@ -389,12 +414,15 @@ mod tests {
     #[test]
     fn gfm_table_renders_as_box() {
         let mut buf = Vec::new();
-        render(
-            "| Name | Age |\n|:-----|----:|\n| Alice | 30 |\n| Bob | 25 |",
-            &ctx(false),
-            &mut buf,
-        )
-        .unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render(
+                "| Name | Age |\n|:-----|----:|\n| Alice | 30 |\n| Bob | 25 |",
+                &ctx(false),
+                &mut sink,
+            )
+            .unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains('┌') && s.contains('┬') && s.contains('┐'), "{s}");
         assert!(s.contains('├') && s.contains('┼') && s.contains('┤'), "{s}");
@@ -406,8 +434,11 @@ mod tests {
     #[test]
     fn gfm_table_ragged_row_does_not_panic() {
         let mut buf = Vec::new();
-        // body row has fewer cells than the header
-        render("| A | B |\n|---|---|\n| x |", &ctx(false), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            // body row has fewer cells than the header
+            render("| A | B |\n|---|---|\n| x |", &ctx(false), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x"));
     }

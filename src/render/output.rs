@@ -2,7 +2,7 @@ use std::io::{self, Write};
 
 use crate::env::RenderCtx;
 use crate::ipynb::model::{MimeBundle, Output};
-use crate::render::{frame, html_table, image, table, text, traceback};
+use crate::render::{frame, html_table, image, sink, table, text, traceback};
 use crate::theme;
 
 /// 단일 Output을 박스 안에서 렌더.
@@ -68,7 +68,8 @@ fn render_bundle(
     if let Some(html) = &bundle.text_html {
         if let Some(parsed) = html_table::parse(html) {
             return frame_section(&out_label(exec_count, "text/html"), ctx, w, |w| {
-                table::render(&parsed, ctx, w)
+                let mut s = sink::BoxedSink::new(w);
+                table::render(&parsed, ctx, &mut s)
             });
         }
     }

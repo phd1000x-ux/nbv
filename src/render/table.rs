@@ -1,10 +1,10 @@
-use std::io::{self, Write};
+use std::io;
 
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::env::RenderCtx;
-use crate::render::frame;
 use crate::render::pad::push_spaces;
+use crate::render::sink::LineSink;
 use crate::theme;
 
 /// Per-column text alignment.
@@ -192,8 +192,8 @@ fn fit_columns(table: &Table, budget: usize) -> Fit {
 }
 
 /// Render `table` as a box-drawn grid, emitting each full line through
-/// `frame::wrap_line` so it sits inside the surrounding cell box.
-pub fn render(table: &Table, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+/// `sink` so it sits inside the surrounding cell box.
+pub fn render(table: &Table, ctx: &RenderCtx, sink: &mut dyn LineSink) -> io::Result<()> {
     let budget = ctx.width.saturating_sub(4);
     let fit = fit_columns(table, budget);
     if fit.widths.is_empty() {
@@ -211,16 +211,16 @@ pub fn render(table: &Table, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<
         align.push(Align::Left);
     }
 
-    border_line(&widths, '┌', '┬', '┐', ctx, w)?;
+    border_line(&widths, '┌', '┬', '┐', ctx, sink)?;
 
     let header_cells: Vec<String> = headers
         .iter()
         .enumerate()
         .map(|(i, h)| pad_cell(&truncate_cell(h, widths[i]), widths[i], align[i]))
         .collect();
-    data_line(&header_cells, ctx.use_color, ctx, w)?;
+    data_line(&header_cells, ctx.use_color, ctx, sink)?;
 
-    border_line(&widths, '├', '┼', '┤', ctx, w)?;
+    border_line(&widths, '├', '┼', '┤', ctx, sink)?;
 
     for row in &table.rows {
         let mut cells: Vec<String> = (0..kept)
@@ -229,21 +229,21 @@ pub fn render(table: &Table, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<
         if fit.dropped > 0 {
             cells.push(pad_cell("…", widths[kept], Align::Left));
         }
-        data_line(&cells, false, ctx, w)?;
+        data_line(&cells, false, ctx, sink)?;
     }
 
-    border_line(&widths, '└', '┴', '┘', ctx, w)?;
+    border_line(&widths, '└', '┴', '┘', ctx, sink)?;
     Ok(())
 }
 
-/// Emit a horizontal border line, e.g. `┌───┬───┐`, through `frame::wrap_line`.
+/// Emit a horizontal border line, e.g. `┌───┬───┐`, through `sink`.
 fn border_line(
     widths: &[usize],
     left: char,
     mid: char,
     right: char,
     ctx: &RenderCtx,
-    w: &mut impl Write,
+    sink: &mut dyn LineSink,
 ) -> io::Result<()> {
     let mut line = String::new();
     line.push(left);
@@ -257,12 +257,17 @@ fn border_line(
     } else {
         line
     };
-    frame::wrap_line(&line, ctx, w)
+    sink.raw_line(&line, ctx)
 }
 
-/// Emit a content row, e.g. `│ a │ b │`, through `frame::wrap_line`.
+/// Emit a content row, e.g. `│ a │ b │`, through `sink`.
 /// When `bold` is true each cell is wrapped in BOLD/RESET (the header row).
-fn data_line(cells: &[String], bold: bool, ctx: &RenderCtx, w: &mut impl Write) -> io::Result<()> {
+fn data_line(
+    cells: &[String],
+    bold: bool,
+    ctx: &RenderCtx,
+    sink: &mut dyn LineSink,
+) -> io::Result<()> {
     // DIM the `│` separators; cell content stays at its own intensity.
     let bar = if ctx.use_color {
         format!("{}│{}", theme::DIM, theme::RESET)
@@ -283,7 +288,7 @@ fn data_line(cells: &[String], bold: bool, ctx: &RenderCtx, w: &mut impl Write) 
         line.push(' ');
         line.push_str(&bar);
     }
-    frame::wrap_line(&line, ctx, w)
+    sink.raw_line(&line, ctx)
 }
 
 #[cfg(test)]
@@ -414,7 +419,10 @@ mod tests {
             vec![Align::Left, Align::Right],
         );
         let mut buf = Vec::new();
-        render(&t, &ctx(40), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render(&t, &ctx(40), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         // box-drawing grid
         assert!(s.contains('┌') && s.contains('┬') && s.contains('┐'));
@@ -433,7 +441,10 @@ mod tests {
     fn render_header_only_table_emits_no_body_rows() {
         let t = Table::new(vec!["a".into(), "b".into()], vec![], vec![Align::Left; 2]);
         let mut buf = Vec::new();
-        render(&t, &ctx(30), &mut buf).unwrap();
+        {
+            let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
+            render(&t, &ctx(30), &mut sink).unwrap();
+        }
         let s = String::from_utf8(buf).unwrap();
         // top border, header, separator, bottom border = 4 lines
         assert_eq!(s.lines().count(), 4);

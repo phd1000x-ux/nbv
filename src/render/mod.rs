@@ -6,6 +6,7 @@ pub mod markdown;
 pub mod output;
 mod pad;
 pub mod plain;
+pub mod sink;
 pub mod table;
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -89,7 +90,10 @@ pub fn render_cell(
             let label = format!("In [{}] ── code ({})", n, lang);
             let label = theme::colorize_code_header(&label, ctx.use_color);
             frame::open(&label, ctx, w)?;
-            code::render(source, lang, ctx, w)?;
+            {
+                let mut sink = crate::render::sink::BoxedSink::new(w);
+                code::render(source, lang, ctx, &mut sink)?;
+            }
             frame::close(ctx, w)?;
             if !no_output {
                 for (i, out) in outputs.iter().enumerate() {
@@ -100,7 +104,10 @@ pub fn render_cell(
         Cell::Markdown { source } => {
             let label = theme::colorize_markdown_header("markdown", ctx.use_color);
             frame::open(&label, ctx, w)?;
-            markdown::render(source, ctx, w)?;
+            {
+                let mut sink = crate::render::sink::BoxedSink::new(w);
+                markdown::render(source, ctx, &mut sink)?;
+            }
             frame::close(ctx, w)?;
         }
         Cell::Raw { source } => {
