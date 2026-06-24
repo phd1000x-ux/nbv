@@ -81,4 +81,20 @@ mod tests {
         assert!(s.contains("# Hi"));
         assert!(s.contains("bold"));
     }
+
+    #[test]
+    fn render_document_does_not_truncate_long_code_lines() {
+        // Pre-formatted code lines render verbatim (no truncation); a line
+        // longer than the width must appear in full — the terminal soft-wraps.
+        let c = crate::render::test_support::width(20);
+        let long = "x".repeat(60);
+        let src = format!("```\n{}\n```\n", long);
+        let mut buf = Vec::new();
+        render_document(&src, None, &c, &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(
+            s.contains(&long),
+            "long code line must render verbatim, not truncated: {s:?}"
+        );
+    }
 }

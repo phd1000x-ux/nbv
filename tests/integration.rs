@@ -616,3 +616,25 @@ fn markdown_local_image_descriptor_with_no_images() {
     assert!(out.contains("remote") || out.contains("example.com"));
     assert!(!out.contains('│'));
 }
+
+#[test]
+fn notebook_markdown_cell_image_renders_descriptor() {
+    // A ![]() inside a notebook markdown cell renders a framed image descriptor
+    // (not silently dropped to alt-text prose). base_dir is None for cells, so
+    // it's always a descriptor.
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "tests/fixtures/md_cell_image.ipynb",
+    ]);
+    assert_eq!(code, 0);
+    assert!(
+        out.contains("[image:"),
+        "markdown-cell image should render a descriptor: {out}"
+    );
+    assert!(
+        out.contains("diagram"),
+        "alt text should appear in the descriptor: {out}"
+    );
+    assert!(out.contains('│'), "notebook cells are framed: {out}");
+}
