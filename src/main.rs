@@ -62,7 +62,7 @@ fn main() -> ExitCode {
             eprintln!("nbv: no notebook given");
             eprintln!();
             eprintln!("Usage:");
-            eprintln!("    nbv [OPTIONS] <FILE>          Render a Jupyter notebook to stdout");
+            eprintln!("    nbv [OPTIONS] <FILE>          Render a Jupyter notebook (.ipynb) or Markdown (.md) file");
             eprintln!(
                 "    nbv setup [--yes]             Add the nbv binary directory to your shell PATH"
             );
@@ -74,7 +74,41 @@ fn main() -> ExitCode {
         }
     };
 
-    let nb = match parse::from_path(&file) {
+    let ext = file
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase());
+
+    match ext.as_deref() {
+        Some("ipynb") => render_notebook_file(&file, &args),
+        Some("md") | Some("markdown") => render_markdown_file(&file, &args),
+        _ => {
+            eprintln!(
+                "nbv: {}: unsupported file type. Supported: .ipynb, .md, .markdown",
+                file.display()
+            );
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// Build the render context from CLI args. `--plain` forces no color/images.
+fn build_ctx(args: &Args) -> env::RenderCtx {
+    let mut ctx = env::detect(
+        args.no_color || args.plain,
+        args.no_images || args.plain,
+        args.theme.clone(),
+        args.width.map(|w| w as usize),
+    );
+    if args.plain {
+        ctx.use_color = false;
+        ctx.image_backend = env::ImageBackend::Placeholder;
+    }
+    ctx
+}
+
+fn render_notebook_file(file: &std::path::Path, args: &Args) -> ExitCode {
+    let nb = match parse::from_path(file) {
         Err(e) => {
             eprintln!("nbv: {}: {}", file.display(), e);
             return ExitCode::from(1);
@@ -86,25 +120,34 @@ fn main() -> ExitCode {
         Ok(Ok(nb)) => nb,
     };
 
-    let mut ctx = env::detect(
-        // --plain forces --no-color and --no-images
-        args.no_color || args.plain,
-        args.no_images || args.plain,
-        args.theme.clone(),
-        args.width.map(|w| w as usize),
-    );
-    // Belt-and-braces: even if some future env::detect path would re-enable
-    // these, --plain semantics must hold.
-    if args.plain {
-        ctx.use_color = false;
-        ctx.image_backend = env::ImageBackend::Placeholder;
-    }
-
-    let filters = build_filters(&args, nb.cells.len());
-
+    let ctx = build_ctx(args);
+    let filters = build_filters(args, nb.cells.len());
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());
     if let Err(e) = render::render_notebook(&nb, &filters, &ctx, &mut w) {
+        if e.kind() == io::ErrorKind::BrokenPipe {
+            return ExitCode::SUCCESS;
+        }
+        eprintln!("nbv: write error: {}", e);
+        return ExitCode::from(1);
+    }
+    let _ = w.flush();
+    ExitCode::SUCCESS
+}
+
+fn render_markdown_file(file: &std::path::Path, args: &Args) -> ExitCode {
+    let source = match std::fs::read_to_string(file) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("nbv: {}: {}", file.display(), e);
+            return ExitCode::from(1);
+        }
+    };
+
+    let ctx = build_ctx(args);
+    let stdout = io::stdout();
+    let mut w = BufWriter::new(stdout.lock());
+    if let Err(e) = render::document::render_document(&source, &ctx, &mut w) {
         if e.kind() == io::ErrorKind::BrokenPipe {
             return ExitCode::SUCCESS;
         }

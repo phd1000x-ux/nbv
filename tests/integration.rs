@@ -386,6 +386,58 @@ fn stream_output_has_no_mismatched_number() {
     );
 }
 
+#[test]
+fn markdown_file_renders_bare_no_frame() {
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "--width",
+        "60",
+        "tests/fixtures/sample.md",
+    ]);
+    assert_eq!(code, 0);
+    assert!(!out.contains('│'), "document must not be framed: {out}");
+    assert!(!out.contains('┌'));
+    assert!(out.contains("# Sample Document"));
+    assert!(out.contains("• first item") || out.contains("- first item"));
+    assert!(out.contains("Alice")); // GFM table still renders
+    assert!(out.contains("x = 1 + 2")); // fenced code still renders
+                                        // long paragraph wrapped: no single output line exceeds the width
+    for line in out.lines() {
+        assert!(line.chars().count() <= 60, "line too wide: {line:?}");
+    }
+}
+
+#[test]
+fn markdown_title_renders_at_top() {
+    // Smoke test that the first heading renders at the document top.
+    // (Frontmatter stripping itself is unit-tested in render::document.)
+    let (out, _err, _code) = run(&["--no-color", "--width", "60", "tests/fixtures/sample.md"]);
+    assert!(out.trim_start().starts_with("# Sample Document"));
+}
+
+#[test]
+fn unsupported_extension_exits_2() {
+    let (_out, err, code) = run(&["tests/fixtures/unknown.xyz"]);
+    assert_eq!(code, 2);
+    assert!(err.contains("unsupported file type"));
+    assert!(err.contains(".ipynb, .md, .markdown"));
+}
+
+#[test]
+fn no_extension_exits_2() {
+    let (_out, err, code) = run(&["tests/fixtures/noext"]);
+    assert_eq!(code, 2);
+    assert!(err.contains("unsupported file type"));
+}
+
+#[test]
+fn missing_markdown_file_exits_1() {
+    let (_out, err, code) = run(&["tests/fixtures/does-not-exist.md"]);
+    assert_eq!(code, 1);
+    assert!(err.contains("does-not-exist.md"));
+}
+
 fn frame_count(out: &str) -> usize {
     out.matches("┌─").count()
 }
