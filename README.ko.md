@@ -120,6 +120,7 @@ cargo install --path .
 
 ```bash
 nbv analysis.ipynb                          # stdout으로 렌더링
+nbv README.md                               # 마크다운 파일을 문서로 렌더링
 nbv --no-color analysis.ipynb               # ANSI 색 끄기
 nbv --no-images analysis.ipynb              # 이미지 강제 placeholder
 nbv --theme InspiredGitHub analysis.ipynb   # 코드 블록의 syntect 테마 변경
@@ -140,6 +141,8 @@ nbv -V                                      # 버전
 nbv completion bash                         # bash 완성 스크립트 출력
 nbv mangen                                  # section-1 man 페이지 출력
 ```
+
+독립 `.md`/`.markdown` 파일은 셀 프레임 없는 bare 문서로 렌더링된다: 본문은 터미널 너비에 맞게 자동 줄바꿈되고, GFM 표는 box-drawing 표로, 코드 펜스는 구문 강조되어 출력된다; 로컬 이미지는 파일 위치 기준 상대 경로로 해석되어 kitty/iTerm2에서 인라인으로 표시되고, 원격 URL이나 없는 파일은 placeholder 설명자로 표시된다(`--no-images`를 쓰면 모든 이미지가 설명자로 강제 대체된다).
 
 이게 전부. 플래그에 없는 동작은 모두 환경에서 자동 감지된다.
 `--theme`, `--width` 는 플래그가 없으면 환경변수 `NBV_THEME` / `NBV_WIDTH` 도 읽기 때문에 셸에서 한 번 `export` 해두면 영속화된다.

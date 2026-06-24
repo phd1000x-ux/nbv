@@ -120,6 +120,7 @@ If `cargo install` warns that `~/.cargo/bin` is not on your `PATH`, run:
 
 ```bash
 nbv analysis.ipynb                          # render to stdout
+nbv README.md                               # render a Markdown file as a document
 nbv --no-color analysis.ipynb               # disable ANSI colors
 nbv --no-images analysis.ipynb              # force image placeholders
 nbv --theme InspiredGitHub analysis.ipynb   # use a different syntect theme for code blocks
@@ -140,6 +141,8 @@ nbv -V                                      # version
 nbv completion bash                         # print bash completion script
 nbv mangen                                  # print section-1 man page
 ```
+
+Standalone `.md`/`.markdown` files are rendered as bare documents (no per-cell frame): prose is word-wrapped to the terminal width, GFM tables render as box-drawn tables, and fenced code is syntax-highlighted; local images resolve relative to the file's directory and display inline on kitty/iTerm2, while remote URLs and missing files show a placeholder descriptor (`--no-images` forces descriptors everywhere).
 
 That is the full surface. Anything not on a flag is auto-detected from the environment.
 `--theme` and `--width` also read `NBV_THEME` / `NBV_WIDTH` from the environment when the flag is absent, so you can `export` them once per shell.
