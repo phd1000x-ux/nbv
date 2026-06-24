@@ -147,7 +147,7 @@ fn render_markdown_file(file: &std::path::Path, args: &Args) -> ExitCode {
     let ctx = build_ctx(args);
     let stdout = io::stdout();
     let mut w = BufWriter::new(stdout.lock());
-    if let Err(e) = render::document::render_document(&source, &ctx, &mut w) {
+    if let Err(e) = render::document::render_document(&source, file.parent(), &ctx, &mut w) {
         if e.kind() == io::ErrorKind::BrokenPipe {
             return ExitCode::SUCCESS;
         }

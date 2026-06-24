@@ -9,7 +9,12 @@ use crate::render::table::{self, Align, Table};
 use crate::theme;
 
 /// 누적 텍스트 + 스타일을 sink으로 흘려보냄.
-pub fn render(source: &str, ctx: &RenderCtx, sink: &mut dyn LineSink) -> io::Result<()> {
+pub fn render(
+    source: &str,
+    base_dir: Option<&std::path::Path>,
+    ctx: &RenderCtx,
+    sink: &mut dyn LineSink,
+) -> io::Result<()> {
     let mut acc = String::new();
     let mut _style = Style::default();
     let mut list_stack: Vec<ListState> = Vec::new();
@@ -17,6 +22,8 @@ pub fn render(source: &str, ctx: &RenderCtx, sink: &mut dyn LineSink) -> io::Res
     let mut pending_code_block: Option<String> = None;
     let mut pending_lang: Option<String> = None;
     let mut table: Option<TableBuilder> = None;
+    let mut image_alt: Option<String> = None;
+    let mut image_url: Option<String> = None;
 
     let parser = Parser::new_ext(source, Options::ENABLE_TABLES);
 
@@ -137,8 +144,23 @@ pub fn render(source: &str, ctx: &RenderCtx, sink: &mut dyn LineSink) -> io::Res
             Event::End(TagEnd::Link) => {
                 acc.push(']');
             }
+            Event::Start(Tag::Image { dest_url, .. }) => {
+                flush_line(&mut acc, in_blockquote, ctx, sink)?;
+                image_url = Some(dest_url.into_string());
+                image_alt = Some(String::new());
+            }
+            Event::End(TagEnd::Image) => {
+                let alt = image_alt.take().unwrap_or_default();
+                let src = image_url.take().unwrap_or_default();
+                let local = load_local_image(base_dir, &src);
+                sink.image(local.as_deref(), &alt, &src, ctx)?;
+            }
             Event::Text(t) => {
-                text_sink(&mut table, &mut acc).push_str(&t);
+                if let Some(alt) = image_alt.as_mut() {
+                    alt.push_str(&t);
+                } else {
+                    text_sink(&mut table, &mut acc).push_str(&t);
+                }
             }
             Event::SoftBreak | Event::HardBreak => {
                 if let Some(cell) = table.as_mut().and_then(|t| t.cur_cell.as_mut()) {
@@ -290,6 +312,24 @@ fn map_align(a: &Alignment) -> Align {
     }
 }
 
+/// Read a local image referenced by a Markdown `![](src)`. Returns `None` for
+/// remote URLs (http/https/protocol-relative), an empty src, a missing base
+/// dir, or any read error — the caller then renders a descriptor line.
+fn load_local_image(base_dir: Option<&std::path::Path>, src: &str) -> Option<Vec<u8>> {
+    let s = src.trim();
+    if s.is_empty()
+        || s.starts_with("http://")
+        || s.starts_with("https://")
+        || s.starts_with("//")
+        || s.starts_with("data:")
+    {
+        return None;
+    }
+    let base = base_dir?;
+    let path = base.join(s);
+    std::fs::read(path).ok()
+}
+
 /// True while events are being routed into a table cell's text buffer.
 fn in_table_cell(table: &Option<TableBuilder>) -> bool {
     table.as_ref().is_some_and(|t| t.cur_cell.is_some())
@@ -318,7 +358,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("# Hello", &ctx(false), &mut sink).unwrap();
+            render("# Hello", None, &ctx(false), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("# Hello"));
@@ -329,7 +369,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("## Hello", &ctx(false), &mut sink).unwrap();
+            render("## Hello", None, &ctx(false), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("## Hello"));
@@ -340,7 +380,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("- one\n- two", &ctx(false), &mut sink).unwrap();
+            render("- one\n- two", None, &ctx(false), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("• one") || s.contains("- one"));
@@ -352,7 +392,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("1. one\n2. two", &ctx(false), &mut sink).unwrap();
+            render("1. one\n2. two", None, &ctx(false), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("1.") || s.contains("1)"));
@@ -364,7 +404,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("use `foo()` here", &ctx(false), &mut sink).unwrap();
+            render("use `foo()` here", None, &ctx(false), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("foo()"));
@@ -383,7 +423,7 @@ mod tests {
         };
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("```python\nx = 1\n```", &ctx_wide, &mut sink).unwrap();
+            render("```python\nx = 1\n```", None, &ctx_wide, &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x") && s.contains("="));
@@ -394,7 +434,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("> quoted", &ctx(false), &mut sink).unwrap();
+            render("> quoted", None, &ctx(false), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("> quoted") || s.contains("│ > quoted"));
@@ -405,7 +445,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
-            render("**bold**", &ctx(true), &mut sink).unwrap();
+            render("**bold**", None, &ctx(true), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("\x1b[1m") || s.contains("bold"));
@@ -418,6 +458,7 @@ mod tests {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
             render(
                 "| Name | Age |\n|:-----|----:|\n| Alice | 30 |\n| Bob | 25 |",
+                None,
                 &ctx(false),
                 &mut sink,
             )
@@ -437,7 +478,7 @@ mod tests {
         {
             let mut sink = crate::render::sink::BoxedSink::new(&mut buf);
             // body row has fewer cells than the header
-            render("| A | B |\n|---|---|\n| x |", &ctx(false), &mut sink).unwrap();
+            render("| A | B |\n|---|---|\n| x |", None, &ctx(false), &mut sink).unwrap();
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x"));

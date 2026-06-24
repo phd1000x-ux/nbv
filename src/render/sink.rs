@@ -4,9 +4,12 @@
 
 use std::io::{self, Write};
 
+use base64::Engine;
+
 use crate::env::RenderCtx;
 use crate::render::frame;
 use crate::render::frame::ansi_width;
+use crate::render::image::{self, png_info};
 use crate::theme;
 
 /// A renderer's only way to emit a line. `text_line` is prose that a bare
@@ -15,6 +18,24 @@ use crate::theme;
 pub trait LineSink {
     fn text_line(&mut self, content: &str, ctx: &RenderCtx) -> io::Result<()>;
     fn raw_line(&mut self, content: &str, ctx: &RenderCtx) -> io::Result<()>;
+    /// Render an image reference. `local` is the file bytes if a local file was
+    /// read successfully; `None` for remote URLs, missing files, or `--no-images`.
+    fn image(
+        &mut self,
+        local: Option<&[u8]>,
+        alt: &str,
+        src: &str,
+        ctx: &RenderCtx,
+    ) -> io::Result<()>;
+}
+
+/// One-line text descriptor for an image we won't inline.
+fn image_descriptor(local: Option<&[u8]>, alt: &str, src: &str) -> String {
+    let label = if !alt.trim().is_empty() { alt } else { src };
+    match local.and_then(png_info::dimensions) {
+        Some((wd, ht)) => format!("🖼  [image: {} ({}×{})]", label, wd, ht),
+        None => format!("🖼  [image: {}]", label),
+    }
 }
 
 /// Framed output: every line becomes `│ {content} │`, padded/truncated to
@@ -36,6 +57,23 @@ impl LineSink for BoxedSink<'_> {
     }
     fn raw_line(&mut self, content: &str, ctx: &RenderCtx) -> io::Result<()> {
         frame::wrap_line(content, ctx, self.w)
+    }
+    fn image(
+        &mut self,
+        local: Option<&[u8]>,
+        alt: &str,
+        src: &str,
+        ctx: &RenderCtx,
+    ) -> io::Result<()> {
+        match (ctx.image_backend, local) {
+            (crate::env::ImageBackend::Placeholder, _) | (_, None) => {
+                frame::wrap_line(&image_descriptor(local, alt, src), ctx, self.w)
+            }
+            (_, Some(bytes)) => {
+                let b64 = base64::engine::general_purpose::STANDARD.encode(bytes);
+                image::dispatch(&b64, 0, 0, ctx, self.w)
+            }
+        }
     }
 }
 
@@ -61,6 +99,23 @@ impl LineSink for BareSink<'_> {
     fn raw_line(&mut self, content: &str, ctx: &RenderCtx) -> io::Result<()> {
         let _ = ctx;
         writeln!(self.w, "{}", content)
+    }
+    fn image(
+        &mut self,
+        local: Option<&[u8]>,
+        alt: &str,
+        src: &str,
+        ctx: &RenderCtx,
+    ) -> io::Result<()> {
+        match (ctx.image_backend, local) {
+            (crate::env::ImageBackend::Placeholder, _) | (_, None) => {
+                self.text_line(&image_descriptor(local, alt, src), ctx)
+            }
+            (_, Some(bytes)) => {
+                let b64 = base64::engine::general_purpose::STANDARD.encode(bytes);
+                image::dispatch(&b64, 0, 0, ctx, self.w)
+            }
+        }
     }
 }
 
@@ -355,5 +410,54 @@ mod tests {
         let c = crate::render::test_support::width(10);
         BareSink::new(&mut buf).raw_line("┌────────┐", &c).unwrap();
         assert_eq!(String::from_utf8(buf).unwrap(), "┌────────┐\n");
+    }
+
+    const ONE_PIXEL_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+
+    fn one_pixel_bytes() -> Vec<u8> {
+        use base64::Engine;
+        base64::engine::general_purpose::STANDARD
+            .decode(ONE_PIXEL_B64)
+            .unwrap()
+    }
+
+    #[test]
+    fn bare_image_descriptor_for_remote() {
+        let mut buf = Vec::new();
+        let c = crate::render::test_support::width(60); // placeholder backend
+        BareSink::new(&mut buf)
+            .image(None, "logo", "https://x/y.png", &c)
+            .unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("image"));
+        assert!(s.contains("logo"));
+        assert!(!s.contains('│'));
+    }
+
+    #[test]
+    fn bare_image_descriptor_shows_png_dims() {
+        let mut buf = Vec::new();
+        let c = crate::render::test_support::width(60); // placeholder backend
+        let bytes = one_pixel_bytes();
+        BareSink::new(&mut buf)
+            .image(Some(&bytes), "pixel", "pixel.png", &c)
+            .unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.contains("1×1") || s.contains("1x1"));
+    }
+
+    #[test]
+    fn bare_image_inlines_for_iterm() {
+        let mut buf = Vec::new();
+        let c = crate::render::test_support::backend(crate::env::ImageBackend::ITerm2);
+        let bytes = one_pixel_bytes();
+        BareSink::new(&mut buf)
+            .image(Some(&bytes), "pixel", "pixel.png", &c)
+            .unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        assert!(
+            s.starts_with("\x1b]1337;"),
+            "iTerm graphics escape expected: {s:?}"
+        );
     }
 }

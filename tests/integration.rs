@@ -597,3 +597,22 @@ fn nbv_cells_env_var_works() {
     let full = run(&["--no-color", "--no-images", "tests/fixtures/large.ipynb"]).0;
     assert!(out.len() < full.len());
 }
+
+#[test]
+fn markdown_local_image_descriptor_with_no_images() {
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "--width",
+        "60",
+        "tests/fixtures/with_local_image.md",
+    ]);
+    assert_eq!(code, 0);
+    // local pixel.png -> dimensions read; remote -> descriptor by alt/url
+    assert!(
+        out.contains("1×1") || out.contains("1x1"),
+        "local PNG dims: {out}"
+    );
+    assert!(out.contains("remote") || out.contains("example.com"));
+    assert!(!out.contains('│'));
+}

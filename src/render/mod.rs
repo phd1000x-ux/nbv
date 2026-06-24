@@ -107,7 +107,7 @@ pub fn render_cell(
             frame::open(&label, ctx, w)?;
             {
                 let mut sink = crate::render::sink::BoxedSink::new(w);
-                markdown::render(source, ctx, &mut sink)?;
+                markdown::render(source, None, ctx, &mut sink)?;
             }
             frame::close(ctx, w)?;
         }

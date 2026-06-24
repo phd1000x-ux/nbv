@@ -8,10 +8,15 @@ use crate::render::markdown;
 use crate::render::sink::BareSink;
 
 /// Render a Markdown document as bare, word-wrapped text (no cell frame).
-pub fn render_document(source: &str, ctx: &RenderCtx, w: &mut dyn Write) -> io::Result<()> {
+pub fn render_document(
+    source: &str,
+    base_dir: Option<&std::path::Path>,
+    ctx: &RenderCtx,
+    w: &mut dyn Write,
+) -> io::Result<()> {
     let body = strip_frontmatter(source);
     let mut sink = BareSink::new(w);
-    markdown::render(body, ctx, &mut sink)
+    markdown::render(body, base_dir, ctx, &mut sink)
 }
 
 /// If `source` opens with a YAML frontmatter block — a first line of exactly
@@ -69,7 +74,7 @@ mod tests {
     fn render_document_emits_no_box_borders() {
         let c = crate::render::test_support::width(40);
         let mut buf = Vec::new();
-        render_document("# Hi\n\nSome **bold** text.\n", &c, &mut buf).unwrap();
+        render_document("# Hi\n\nSome **bold** text.\n", None, &c, &mut buf).unwrap();
         let s = String::from_utf8(buf).unwrap();
         assert!(!s.contains('│'));
         assert!(!s.contains('┌'));
