@@ -400,12 +400,40 @@ fn markdown_file_renders_bare_no_frame() {
     assert!(!out.contains('┌'));
     assert!(out.contains("# Sample Document"));
     assert!(out.contains("• first item") || out.contains("- first item"));
-    assert!(out.contains("Alice")); // GFM table still renders
+    assert!(out.contains("Alice")); // plain prose still renders
     assert!(out.contains("x = 1 + 2")); // fenced code still renders
                                         // long paragraph wrapped: no single output line exceeds the width
     for line in out.lines() {
         assert!(line.chars().count() <= 60, "line too wide: {line:?}");
     }
+}
+
+#[test]
+fn markdown_table_renders_as_box_in_document() {
+    let (out, _err, code) = run(&[
+        "--no-color",
+        "--no-images",
+        "--width",
+        "60",
+        "tests/fixtures/doc_with_table.md",
+    ]);
+    assert_eq!(code, 0);
+    // Not cell-framed: the document starts with its heading, not a ┌ frame line.
+    assert!(
+        out.trim_start().starts_with("# Table Doc"),
+        "doc should not be cell-framed: {out}"
+    );
+    // No markdown cell-frame label (notebook cells render `┌─ markdown ─…─┐`).
+    assert!(
+        !out.contains("─ markdown"),
+        "no cell frame label expected: {out}"
+    );
+    // The GFM table renders as a box: data present + box-drawing column tee (┬ appears only in tables, not cell frames).
+    assert!(out.contains("Alice") && out.contains("30") && out.contains("Bob"));
+    assert!(
+        out.contains('│') && out.contains('┬'),
+        "expected a box-drawn table: {out}"
+    );
 }
 
 #[test]
