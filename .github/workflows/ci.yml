@@ -76,10 +76,14 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     permissions:
-      checks: write
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: rustsec/audit-check@v2
+      # rustsec/audit-check compiles cargo-audit from source, which broke when
+      # its transitive deps started requiring rustc > our pinned toolchain.
+      # Install a prebuilt binary instead; `cargo audit` only scans the
+      # lockfile, so the runner toolchain version is irrelevant.
+      - uses: taiki-e/install-action@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tool: cargo-audit
+      - run: cargo audit
