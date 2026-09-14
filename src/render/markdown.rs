@@ -312,9 +312,14 @@ fn map_align(a: &Alignment) -> Align {
     }
 }
 
+/// Maximum byte size for a local image read via a Markdown `![](src)`.
+/// Larger files are rejected to bound memory use (a malicious document could
+/// otherwise reference an arbitrarily large file or `/dev/zero`).
+const MAX_IMAGE_BYTES: u64 = 16 * 1024 * 1024; // 16 MB
+
 /// Read a local image referenced by a Markdown `![](src)`. Returns `None` for
 /// remote URLs (http/https/protocol-relative), an empty src, a missing base
-/// dir, or any read error — the caller then renders a descriptor line.
+/// dir, an oversized file, or any read error — the caller renders a descriptor.
 fn load_local_image(base_dir: Option<&std::path::Path>, src: &str) -> Option<Vec<u8>> {
     let s = src.trim();
     if s.is_empty()
@@ -327,6 +332,10 @@ fn load_local_image(base_dir: Option<&std::path::Path>, src: &str) -> Option<Vec
     }
     let base = base_dir?;
     let path = base.join(s);
+    let metadata = std::fs::metadata(&path).ok()?;
+    if metadata.len() > MAX_IMAGE_BYTES {
+        return None;
+    }
     std::fs::read(path).ok()
 }
 
@@ -482,5 +491,29 @@ mod tests {
         }
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains("x"));
+    }
+
+    #[test]
+    fn load_local_image_rejects_oversized_file() {
+        let dir = std::env::temp_dir();
+        let name = format!("nbv_test_big_{}.bin", std::process::id());
+        let big = dir.join(&name);
+        // 17 MB — 상한(16 MB) 초과. set_len으로 sparse file 생성 (실제 I/O 최소화).
+        let f = std::fs::File::create(&big).unwrap();
+        f.set_len(17 * 1024 * 1024).unwrap();
+        drop(f);
+        let result = load_local_image(Some(&dir), &name);
+        assert!(result.is_none(), "oversized image must be rejected");
+        let _ = std::fs::remove_file(&big);
+    }
+
+    #[test]
+    fn load_local_image_allows_small_file() {
+        let dir = std::env::temp_dir();
+        let name = format!("nbv_test_small_{}.bin", std::process::id());
+        std::fs::write(dir.join(&name), b"small").unwrap();
+        let result = load_local_image(Some(&dir), &name);
+        assert_eq!(result.as_deref(), Some(&b"small"[..]));
+        let _ = std::fs::remove_file(dir.join(&name));
     }
 }
