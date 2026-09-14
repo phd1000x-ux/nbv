@@ -17,18 +17,42 @@ pub fn render(traceback: &[String], ctx: &RenderCtx, w: &mut impl Write) -> io::
     Ok(())
 }
 
-/// CSI 시퀀스(`\x1b[...m`)와 단순 `\x1b[X` 형태 escape를 제거.
+/// CSI 시퀀스(`\x1b[...m`)와 OSC 시퀀스(`\x1b]...BEL`/`\x1b]...\x1b\\`),
+/// 그리고 단독 ESC를 제거. 커널 traceback이나 stream 출력에 끼어든
+/// 터미널 제어 시퀀스를 no-color 모드에서 완전히 걷어낸다.
 fn strip_ansi(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();
     while let Some(c) = chars.next() {
-        if c == '\x1b' && chars.peek() == Some(&'[') {
-            chars.next(); // '['
-            while let Some(&nc) = chars.peek() {
-                chars.next();
-                // 종료는 0x40~0x7E 범위 ASCII
-                if ('@'..='~').contains(&nc) {
-                    break;
+        if c == '\x1b' {
+            match chars.peek() {
+                Some('[') => {
+                    chars.next(); // '['
+                    while let Some(&nc) = chars.peek() {
+                        chars.next();
+                        // 종료는 0x40~0x7E 범위 ASCII
+                        if ('@'..='~').contains(&nc) {
+                            break;
+                        }
+                    }
+                }
+                Some(']') => {
+                    chars.next(); // ']'
+                    for nc in chars.by_ref() {
+                        if nc == '\x07' {
+                            break; // BEL 종료
+                        }
+                        if nc == '\x1b' {
+                            // ST(ESC \) 종료: \가 뒤따르면 함께 consume
+                            if chars.peek() == Some(&'\\') {
+                                chars.next();
+                            }
+                            break;
+                        }
+                    }
+                }
+                _ => {
+                    // 단독 ESC 또는 기타 단일 문자 이스케이프: ESC만 제거
                 }
             }
         } else {
@@ -104,5 +128,20 @@ mod strip_tests {
     #[test]
     fn passes_through_plain() {
         assert_eq!(strip_ansi("abc"), "abc");
+    }
+    #[test]
+    fn strips_osc_terminated_by_bel() {
+        // OSC 0 (set title): ESC ] 0 ; title BEL — must not survive stripping.
+        assert_eq!(strip_ansi("before\x1b]0;title\x07after"), "beforeafter");
+    }
+    #[test]
+    fn strips_osc_terminated_by_st() {
+        // OSC terminated by String Terminator (ESC \).
+        assert_eq!(strip_ansi("\x1b]0;t\x1b\\x"), "x");
+    }
+    #[test]
+    fn strips_bare_escape() {
+        // A lone ESC not followed by [ or ] must still be removed.
+        assert_eq!(strip_ansi("a\x1bb"), "ab");
     }
 }

@@ -107,7 +107,7 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
                 trimmed.push(' ');
             }
             used += to_add;
-        } else {
+        } else if !ch.is_control() {
             let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
             if used + cw > inner_w {
                 break;
@@ -115,6 +115,7 @@ pub fn wrap_line(content: &str, ctx: &RenderCtx, w: &mut (impl Write + ?Sized)) 
             trimmed.push(ch);
             used += cw;
         }
+        // 나머지 C0/C1 제어 문자(BEL, BS, VT, FF, NUL, 단독 ESC 등)는 drop.
     }
     if had_style {
         trimmed.push_str(theme::RESET);
@@ -347,5 +348,23 @@ mod tests {
         assert!(s.contains("x"));
         assert!(s.contains("="));
         assert!(s.contains("1"));
+    }
+
+    #[test]
+    fn wrap_line_drops_c0_control_chars() {
+        // SECURITY: BEL, BS, VT, FF, NUL 같은 C0 제어 문자는 박스 출력에서
+        // 제거되어야 한다. BS는 박스 테두리를 덮어쓸 수 있고 BEL은 소리를 낸다.
+        let mut buf = Vec::new();
+        wrap_line("a\x07b\x08c\x0b\x0cd\x00e", &ctx(30), &mut buf).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+        for ch in ['\x07', '\x08', '\x0b', '\x0c', '\x00'] {
+            assert!(
+                !s.contains(ch),
+                "control char {ch:?} must not appear: {s:?}"
+            );
+        }
+        for ch in ['a', 'b', 'c', 'd', 'e'] {
+            assert!(s.contains(ch), "visible char {ch} must survive: {s:?}");
+        }
     }
 }

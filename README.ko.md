@@ -222,7 +222,7 @@ Braille 아트(U+2800–U+28FF) 주변에서 박스 테두리가 어긋날 수 �
 ## 개발
 
 ```bash
-cargo test              # 212 tests (176 unit + 31 integration + 5 generate)
+cargo test              # 253 tests (209 unit + 39 integration + 5 generate)
 cargo build --release   # target/release/nbv (약 3 MB)
 ```
 

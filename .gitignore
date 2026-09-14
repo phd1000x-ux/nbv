@@ -2,3 +2,7 @@
 *.swp
 .DS_Store
 /docs/superpowers/
+# Tooling artifacts (generated/local — see AGENTS.md)
+.codegraph/
+.superpowers/
+.claude/
