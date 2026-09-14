@@ -17,12 +17,17 @@ name = "nbv"
 path = "src/lib.rs"
 
 [dependencies]
+# Exact pin on purpose: clap is bumped deliberately in lockstep with
+# clap_complete, never allowed to drift via loose semver.
 clap = { version = "=4.6.5", features = ["derive", "env"] }
 clap_complete = "4"
 clap_mangen = { version = "0.3", features = ["env"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-syntect = { version = "5.3", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "html", "yaml-load", "dump-load", "dump-create", "regex-fancy"] }
+# Only the highlighting API is used (code.rs): default syntax/theme dumps via
+# dump-load, pure-Rust regex-fancy. `html`, `yaml-load`, `dump-create` are
+# unused; yaml-load pulls in unmaintained yaml-rust (RUSTSEC-2024-0320).
+syntect = { version = "5.3", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "dump-load", "regex-fancy"] }
 pulldown-cmark = { version = "0.10", default-features = false }
 crossterm = "0.29"
 base64 = "0.23"
