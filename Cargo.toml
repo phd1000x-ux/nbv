@@ -19,7 +19,7 @@ path = "src/lib.rs"
 [dependencies]
 # Exact pin on purpose: clap is bumped deliberately in lockstep with
 # clap_complete, never allowed to drift via loose semver.
-clap = { version = "=4.6.5", features = ["derive", "env"] }
+clap = { version = "=4.6.6", features = ["derive", "env"] }
 clap_complete = "4"
 clap_mangen = { version = "0.3", features = ["env"] }
 serde = { version = "1", features = ["derive"] }
